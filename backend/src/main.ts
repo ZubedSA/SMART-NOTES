@@ -6,12 +6,11 @@ import * as express from 'express';
 
 const server = express();
 const logger = new Logger('Bootstrap');
+let isInitialized = false;
 
-export const createServer = async (expressInstance: any) => {
-  const app = await NestFactory.create(
-    AppModule,
-    new ExpressAdapter(expressInstance),
-  );
+async function bootstrap() {
+  if (isInitialized) return;
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   
   app.enableCors({
     origin: '*',
@@ -28,21 +27,22 @@ export const createServer = async (expressInstance: any) => {
   );
 
   await app.init();
-  return app;
-};
+  isInitialized = true;
+  logger.log('🚀 NestJS Serverless Application Initialized');
+}
 
-// Mode local development (jika dijalankan langsung lewat node/ts-node)
+// Mode local development
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   const port = process.env.PORT || 3001;
-  createServer(server).then(() => {
+  bootstrap().then(() => {
     server.listen(port, () => {
       logger.log(`🚀 Smart Notes Backend API running locally on port: ${port}`);
     });
   });
 }
 
-// Handler untuk Vercel Serverless Function
+// Export serverless handler untuk Vercel
 export default async (req: any, res: any) => {
-  await createServer(server);
+  await bootstrap();
   return server(req, res);
 };
