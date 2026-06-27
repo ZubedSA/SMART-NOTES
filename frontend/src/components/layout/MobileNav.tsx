@@ -23,6 +23,16 @@ import {
   LogOut,
 } from 'lucide-react';
 
+interface MoreMenuItem {
+  label: string;
+  href: string;
+  icon: any;
+  color: string;
+  bg: string;
+  badge?: string;
+  roles?: string[];
+}
+
 export const MobileNav = () => {
   const pathname = usePathname() || '/';
   const { hasRole, logout } = useAuth();
@@ -35,7 +45,7 @@ export const MobileNav = () => {
     { label: 'Rapat', href: '/meetings', icon: Users },
   ];
 
-  const moreMenuItems = [
+  const moreMenuItems: MoreMenuItem[] = [
     { label: 'Tugas & Kanban', href: '/tasks', icon: CheckSquare, color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
     { label: 'Kalender', href: '/calendar', icon: Calendar, color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
     { label: 'AI Assistant', href: '/ai-assistant', icon: Bot, color: '#22c55e', bg: 'rgba(34,197,94,0.1)', badge: 'New' },

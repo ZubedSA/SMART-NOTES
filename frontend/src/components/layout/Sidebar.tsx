@@ -22,13 +22,21 @@ import {
   Sparkles,
 } from 'lucide-react';
 
+interface NavItem {
+  label: string;
+  href: string;
+  icon: any;
+  badge?: string;
+  roles?: string[];
+}
+
 export const Sidebar = () => {
   const pathname = usePathname() || '/';
   const { user, logout, hasRole } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [collapsed, setCollapsed] = useState(false);
 
-  const menuGroups = [
+  const menuGroups: { title: string; items: NavItem[] }[] = [
     {
       title: 'Utama',
       items: [
