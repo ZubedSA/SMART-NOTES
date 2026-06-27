@@ -1,19 +1,24 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import * as express from 'express';
 
-async function bootstrap() {
-  const logger = new Logger('Bootstrap');
-  const app = await NestFactory.create(AppModule);
+const server = express();
+const logger = new Logger('Bootstrap');
 
-  // Enable CORS for frontend integration
+export const createServer = async (expressInstance: any) => {
+  const app = await NestFactory.create(
+    AppModule,
+    new ExpressAdapter(expressInstance),
+  );
+  
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
-  // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -22,8 +27,22 @@ async function bootstrap() {
     }),
   );
 
+  await app.init();
+  return app;
+};
+
+// Mode local development (jika dijalankan langsung lewat node/ts-node)
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
   const port = process.env.PORT || 3001;
-  await app.listen(port);
-  logger.log(`🚀 Smart Notes Backend API running on port: ${port}`);
+  createServer(server).then(() => {
+    server.listen(port, () => {
+      logger.log(`🚀 Smart Notes Backend API running locally on port: ${port}`);
+    });
+  });
 }
-bootstrap();
+
+// Handler untuk Vercel Serverless Function
+export default async (req: any, res: any) => {
+  await createServer(server);
+  return server(req, res);
+};
