@@ -11,14 +11,14 @@ const config: Config = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#14532D', // Emerald 900
-          light: '#166534',
-          dark: '#052e16',
+          DEFAULT: '#0D3E26', // Deep Spruce Green
+          light: '#1B5E3C',
+          dark: '#082718',
         },
         accent: {
-          DEFAULT: '#16A34A', // Green 600
-          light: '#22c55e',
-          dark: '#15803d',
+          DEFAULT: '#10B981', // Emerald Mint
+          light: '#34D399',
+          dark: '#059669',
         },
       },
       fontFamily: {
@@ -29,8 +29,11 @@ const config: Config = {
         '3xl': '1.5rem',
       },
       boxShadow: {
-        soft: '0 10px 25px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025)',
-        glass: '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+        soft: '0 10px 25px -3px rgba(0, 0, 0, 0.03), 0 4px 6px -2px rgba(0, 0, 0, 0.01)',
+        glass: '0 8px 32px 0 rgba(31, 38, 135, 0.04)',
+        premium: '0 8px 30px rgba(0, 0, 0, 0.03)',
+        luxury: '0 20px 40px -15px rgba(0, 0, 0, 0.07)',
+        glow: '0 0 20px rgba(16, 185, 129, 0.15)',
       },
     },
   },

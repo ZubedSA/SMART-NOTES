@@ -28,6 +28,8 @@ import {
   MessageSquare,
   FileDown,
   Settings,
+  Search,
+  Share2,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -120,11 +122,25 @@ export default function MeetingsPage() {
   // Expanded card
   const [expandedMeetingId, setExpandedMeetingId] = useState<string | null>(null);
 
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+
   // Saving state
   const [saving, setSaving] = useState(false);
 
   // Action Item Search & Filters
   const [taskSearch, setTaskSearch] = useState('');
+  const [meetingSearch, setMeetingSearch] = useState('');
   const [taskPriorityFilter, setTaskPriorityFilter] = useState('Semua');
   const [taskStatusFilter, setTaskStatusFilter] = useState('Semua');
   const [taskPicFilter, setTaskPicFilter] = useState('Semua');
@@ -285,8 +301,16 @@ export default function MeetingsPage() {
     }
   };
 
-  const handleDeleteMeeting = async (id: string) => {
-    if (!confirm('Hapus rapat ini beserta seluruh action items-nya?')) return;
+  const handleDeleteMeeting = (id: string) => {
+    setConfirmModal({
+      show: true,
+      title: 'Hapus Rapat',
+      message: 'Apakah Anda yakin ingin menghapus rapat ini beserta seluruh action items-nya secara permanen?',
+      onConfirm: () => executeDeleteMeeting(id),
+    });
+  };
+
+  const executeDeleteMeeting = async (id: string) => {
     const previousMeetings = [...meetings];
     const previousTasks = [...actionItems];
 
@@ -423,6 +447,32 @@ export default function MeetingsPage() {
     const newPoints = [...notulenForm.points];
     newPoints[index] = { ...newPoints[index], [field]: value };
     setNotulenForm({ points: newPoints });
+  };
+
+  const shareToWhatsApp = (mtg: Meeting) => {
+    const points = parseNotulenPoints(mtg.discussion || '', mtg.decision || '');
+    
+    let text = `*📄 NOTULEN RAPAT RESMI: ${mtg.title.toUpperCase()}*\n`;
+    text += `📅 *Tanggal:* ${formatDate(mtg.date)}\n`;
+    text += `⏰ *Waktu:* ${mtg.time || '-'} WIB\n`;
+    text += `📍 *Lokasi:* ${mtg.location || '-'}\n`;
+    text += `👤 *Moderator:* ${mtg.moderator || '-'}\n`;
+    text += `📝 *Notulis:* ${mtg.notulen || '-'}\n\n`;
+    
+    text += `📌 *Agenda:* ${mtg.agenda || '-'}\n\n`;
+    
+    if (points.length > 0) {
+      text += `📝 *Poin Pembahasan & Keputusan:*\n`;
+      points.forEach((pt, idx) => {
+        text += `${idx + 1}. *Pembahasan:* ${pt.discussion || '-'}\n`;
+        text += `   *Keputusan:* ${pt.decision || '-'}\n\n`;
+      });
+    } else {
+      text += `_(Belum ada pembahasan & keputusan notulen yang diisi)_\n`;
+    }
+    
+    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+    window.open(url, '_blank');
   };
 
   const exportToPDF = (mtg: Meeting, mtgTasks: ActionItem[]) => {
@@ -766,8 +816,16 @@ export default function MeetingsPage() {
     }
   };
 
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Hapus action item ini?')) return;
+  const handleDeleteTask = (taskId: string) => {
+    setConfirmModal({
+      show: true,
+      title: 'Hapus Action Item',
+      message: 'Apakah Anda yakin ingin menghapus action item ini secara permanen?',
+      onConfirm: () => executeDeleteTask(taskId),
+    });
+  };
+
+  const executeDeleteTask = async (taskId: string) => {
     const previousTasks = [...actionItems];
     const updatedTasks = actionItems.filter(a => a.id !== taskId);
 
@@ -830,56 +888,67 @@ export default function MeetingsPage() {
 
   const meetingTasks = (meetingId: string) => actionItems.filter(a => a.meeting_id === meetingId);
 
+  const filteredMeetings = meetings.filter(m => {
+    const query = meetingSearch.toLowerCase();
+    const matchTitle = (m.title || '').toLowerCase().includes(query);
+    const matchAgenda = (m.agenda || '').toLowerCase().includes(query);
+    const matchDiscussion = (m.discussion || '').toLowerCase().includes(query);
+    const matchDecision = (m.decision || '').toLowerCase().includes(query);
+    const matchModerator = (m.moderator || '').toLowerCase().includes(query);
+    const matchNotulen = (m.notulen || '').toLowerCase().includes(query);
+    return matchTitle || matchAgenda || matchDiscussion || matchDecision || matchModerator || matchNotulen;
+  });
+
   // ===== INPUT STYLE =====
-  const inputClass = "w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-2 focus:ring-accent/50 transition-all";
-  const labelClass = "block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1";
+  const inputClass = "w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900/30 text-slate-800 dark:text-slate-100 transition-all duration-200 outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 focus:shadow-[0_0_15px_rgba(16,185,129,0.08)]";
+  const labelClass = "block text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-2 pl-0.5";
 
   return (
     <AppLayout>
       {/* Header */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between pb-3.5 border-b border-slate-200/50 dark:border-slate-800/40">
+        <div className="flex items-center justify-between w-full md:w-auto">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2">
-              <Users className="w-6 h-6 text-accent shrink-0" />
+            <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2.5 tracking-tight">
+              <Users className="w-5.5 h-5.5 text-accent shrink-0 stroke-2" />
               Manajemen Rapat
             </h1>
-            <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] md:text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-medium">
               Rekam notulen, buat action items, dan pantau tindak lanjut
             </p>
           </div>
           {activeTab === 'meetings' ? (
-            <button onClick={openCreateMeeting} className="lg:hidden px-3.5 py-2 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-transform">
-              <Plus className="w-4 h-4" /> Rapat
+            <button onClick={openCreateMeeting} className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all">
+              <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Rapat
             </button>
           ) : (
-            <button onClick={() => openCreateTask('')} className="lg:hidden px-3.5 py-2 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-transform">
-              <Plus className="w-4 h-4" /> Action
+            <button onClick={() => openCreateTask('')} className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all">
+              <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Action
             </button>
           )}
         </div>
-        <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
-          <Link href="/monitoring" className="flex-1 md:flex-initial text-center px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-colors">
+        <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-end">
+          <Link href="/monitoring" className="flex-1 md:flex-initial text-center px-4 py-2.5 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-slate-200/50 dark:border-slate-800/40 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
             <TrendingUp className="w-4 h-4 text-accent" /> Dashboard
           </Link>
           {activeTab === 'meetings' ? (
-            <button onClick={openCreateMeeting} className="hidden lg:flex px-5 py-2.5 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs items-center justify-center gap-2 shadow-lg hover:opacity-95 transition-all">
-              <Plus className="w-4 h-4" /> Buat Rapat Baru
+            <button onClick={openCreateMeeting} className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+              <Plus className="w-4 h-4 stroke-[2.5px]" /> Buat Rapat Baru
             </button>
           ) : (
-            <button onClick={() => openCreateTask('')} className="hidden lg:flex px-5 py-2.5 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs items-center justify-center gap-2 shadow-lg hover:opacity-95 transition-all">
-              <Plus className="w-4 h-4" /> Buat Action Item Baru
+            <button onClick={() => openCreateTask('')} className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
+              <Plus className="w-4 h-4 stroke-[2.5px]" /> Buat Action Item Baru
             </button>
           )}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
-        <button onClick={() => setActiveTab('meetings')} className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${activeTab === 'meetings' ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-          Daftar Rapat ({meetings.length})
+      <div className="flex p-1 bg-slate-105 dark:bg-slate-900/40 rounded-2xl w-fit border border-slate-200/30 dark:border-slate-850 no-scrollbar">
+        <button onClick={() => setActiveTab('meetings')} className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 whitespace-nowrap ${activeTab === 'meetings' ? 'bg-white dark:bg-slate-950 text-primary dark:text-accent shadow-sm border border-slate-250/20 dark:border-slate-800/40' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>
+          Daftar Rapat ({meetingSearch ? `${filteredMeetings.length}/${meetings.length}` : meetings.length})
         </button>
-        <button onClick={() => setActiveTab('actions')} className={`px-5 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${activeTab === 'actions' ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+        <button onClick={() => setActiveTab('actions')} className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 whitespace-nowrap ${activeTab === 'actions' ? 'bg-white dark:bg-slate-950 text-primary dark:text-accent shadow-sm border border-slate-250/20 dark:border-slate-800/40' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'}`}>
           Action Items ({actionItems.length})
         </button>
       </div>
@@ -888,47 +957,98 @@ export default function MeetingsPage() {
       {loading ? (
         <div className="space-y-4">{[1,2,3].map(i => <div key={i} className="h-32 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />)}</div>
       ) : activeTab === 'meetings' ? (
-        <div className="space-y-3.5 md:space-y-4 pb-2">
-          {meetings.length === 0 && (
-            <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 text-center space-y-3 shadow-sm">
-              <Users className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto" />
-              <p className="text-sm font-semibold text-slate-500">Belum ada rapat</p>
-              <button onClick={openCreateMeeting} className="text-xs text-accent font-bold hover:underline">+ Buat Rapat Pertama</button>
+        <div className="space-y-4 pb-4 animate-fadeIn">
+          {/* Deep Search Meetings Toolbar */}
+          <div className="premium-card p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="w-full md:w-80 relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Cari rapat, agenda, atau notulen..."
+                value={meetingSearch}
+                onChange={(e) => setMeetingSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 text-slate-800 dark:text-slate-100 outline-none focus:border-accent transition-all"
+              />
+            </div>
+            <div className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+              🔍 Deep Search: Mendeteksi Judul, Agenda & Isi Pembahasan
+            </div>
+          </div>
+
+          {filteredMeetings.length === 0 && (
+            <div className="premium-card p-12 text-center space-y-4 shadow-premium">
+              <Users className="w-14 h-14 text-slate-300 dark:text-slate-700 mx-auto stroke-1" />
+              <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Tidak menemukan rapat yang cocok</p>
+              {meetingSearch && (
+                <button onClick={() => setMeetingSearch('')} className="text-xs text-accent font-bold hover:underline transition-all">Bersihkan Pencarian</button>
+              )}
             </div>
           )}
-          {meetings.map((mtg) => {
+          {filteredMeetings.map((mtg) => {
             const expanded = expandedMeetingId === mtg.id;
             const tasks = meetingTasks(mtg.id);
+            
+            // Calculate task progress and overdue stats
+            const totalTasks = tasks.length;
+            const completedTasks = tasks.filter((t: any) => t.status === 'Selesai').length;
+            const overdueTasks = tasks.filter((t: any) => {
+              if (t.status === 'Selesai') return false;
+              if (!t.deadline) return false;
+              const deadlineDate = new Date(t.deadline);
+              const today = new Date();
+              today.setHours(0,0,0,0);
+              return deadlineDate < today;
+            }).length;
+
+            const completionPercent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
             const nextStatus = getNextStatus(mtg.status);
             const nextLabel = getNextStatusLabel(mtg.status);
 
             return (
-              <div key={mtg.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
-                <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-primary to-accent" />
+              <div key={mtg.id} className="premium-card relative overflow-hidden">
+                <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-primary to-accent" />
 
                 {/* Card Header */}
-                <div className="p-4 md:p-5 pl-5 md:pl-6">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-2.5">
+                <div className="p-5 pl-6">
+                  <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white leading-snug">{mtg.title || 'Tanpa Judul'}</h3>
-                        <span className={`text-[10px] px-2.5 py-0.5 rounded-lg font-extrabold uppercase tracking-wide border ${getStatusStyle(mtg.status)}`}>
+                        <h3 className="text-base md:text-lg font-extrabold text-slate-900 dark:text-white leading-snug tracking-tight">{mtg.title || 'Tanpa Judul'}</h3>
+                        <span className={`text-[9px] px-2.5 py-0.5 rounded-lg font-bold uppercase tracking-wider border ${getStatusStyle(mtg.status)}`}>
                           {mtg.status || 'Draft'}
                         </span>
+                        {overdueTasks > 0 && (
+                          <span className="text-[9px] px-2.5 py-0.5 rounded-lg font-extrabold uppercase tracking-wider bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse flex items-center gap-1 shadow-sm">
+                            <AlertCircle className="w-3 h-3 stroke-[2.5px]" /> {overdueTasks} Overdue!
+                          </span>
+                        )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-2">
-                        <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300"><Calendar className="w-3.5 h-3.5 text-accent" /> {formatDate(mtg.date)}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {mtg.time} WIB</span>
-                        {mtg.location && <span className="flex items-center gap-1 text-slate-400"><MapPin className="w-3.5 h-3.5" /> {mtg.location}</span>}
-                        {tasks.length > 0 && <span className="flex items-center gap-1 text-accent font-semibold"><Target className="w-3.5 h-3.5" /> {tasks.length} action items</span>}
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 mt-2.5 font-medium">
+                        <span className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-350"><Calendar className="w-4 h-4 text-accent" /> {formatDate(mtg.date)}</span>
+                        <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> {mtg.time} WIB</span>
+                        {mtg.location && <span className="flex items-center gap-1.5 text-slate-400"><MapPin className="w-4 h-4" /> {mtg.location}</span>}
+                        {totalTasks > 0 && <span className="flex items-center gap-1.5 text-accent font-bold"><Target className="w-4 h-4" /> {totalTasks} action items</span>}
                       </div>
-                    </div>
+
+                      {totalTasks > 0 && (
+                        <div className="mt-3.5 space-y-1.5 max-w-xs">
+                          <div className="flex justify-between items-center text-[10px] font-bold">
+                            <span className="text-slate-400 dark:text-slate-500 uppercase tracking-wider">Progress Tindak Lanjut</span>
+                            <span className="text-accent">{completionPercent}% ({completedTasks}/{totalTasks} Selesai)</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-105 dark:bg-slate-900 rounded-full overflow-hidden border border-slate-200/20 dark:border-slate-800/30">
+                            <div className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300" style={{ width: `${completionPercent}%` }} />
+                          </div>
+                        </div>
+                      )}
+                      </div>
 
                     {/* Tombol Aksi - Lebih Menarik & Mudah Dipahami */}
-                    <div className="flex items-center gap-1.5 flex-wrap pt-1 md:pt-0">
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1 lg:pt-0">
                       {/* Workflow: Next Status Button */}
                       {nextStatus && (
-                        <button onClick={() => handleUpdateStatus(mtg.id, nextStatus)} className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-gradient-to-r from-primary to-accent text-white shadow-sm hover:opacity-90 transition-all">
+                        <button onClick={() => handleUpdateStatus(mtg.id, nextStatus)} className="px-3 py-1.5 rounded-xl text-[10px] font-bold bg-gradient-to-r from-primary via-primary/95 to-accent text-white shadow-premium hover:shadow-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all">
                           {nextLabel}
                         </button>
                       )}
@@ -936,7 +1056,7 @@ export default function MeetingsPage() {
                       {/* Mobile action trigger */}
                       <button 
                         onClick={() => setMobileActionMeeting(mtg)} 
-                        className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-primary to-accent text-white shadow-md hover:opacity-95 transition-all"
+                        className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold bg-gradient-to-r from-primary via-primary/95 to-accent text-white shadow-premium active:scale-[0.97] transition-all"
                         title="Pilihan Aksi"
                       >
                         <Settings className="w-3.5 h-3.5" />
@@ -945,70 +1065,79 @@ export default function MeetingsPage() {
 
                       <button 
                         onClick={() => openNotulen(mtg)} 
-                        className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-amber-200/50 dark:border-amber-900/30 text-amber-600 bg-amber-50/60 hover:bg-amber-100 dark:text-amber-400 dark:bg-amber-950/20 transition-all"
+                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
                         title="Isi Notulen Rapat"
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Notulen</span>
+                        <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Notulen</span>
                       </button>
 
                       <button 
                         onClick={() => exportToPDF(mtg, tasks)} 
-                        className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 bg-emerald-50/60 hover:bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-950/20 transition-all"
+                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-650 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
                         title="Unduh PDF Dokumen Rapat"
                       >
-                        <FileDown className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">PDF</span>
+                        <FileDown className="w-3.5 h-3.5 text-emerald-500" />
+                        <span>PDF</span>
+                      </button>
+
+                      <button 
+                        onClick={() => shareToWhatsApp(mtg)} 
+                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-650 hover:text-accent dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
+                        title="Bagikan Notulen ke WhatsApp"
+                      >
+                        <Share2 className="w-3.5 h-3.5 text-accent" />
+                        <span>Bagikan</span>
                       </button>
 
                       <button 
                         onClick={() => openCreateTask(mtg.id)} 
-                        className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-green-200/50 dark:border-green-900/30 text-green-600 bg-green-50/60 hover:bg-green-100 dark:text-green-400 dark:bg-green-950/20 transition-all"
+                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
                         title="Tambah Tugas Tindak Lanjut"
                       >
-                        <ClipboardList className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Tugas</span>
+                        <ClipboardList className="w-3.5 h-3.5 text-green-500" />
+                        <span>Tugas</span>
                       </button>
 
                       <button 
                         onClick={() => openEditMeeting(mtg)} 
-                        className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-blue-200/50 dark:border-blue-900/30 text-blue-600 bg-blue-50/60 hover:bg-blue-100 dark:text-blue-400 dark:bg-blue-950/20 transition-all"
+                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
                         title="Edit Rapat"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Edit</span>
+                        <Edit3 className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Edit</span>
                       </button>
 
                       <button 
                         onClick={() => handleDeleteMeeting(mtg.id)} 
-                        className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-red-200/50 dark:border-red-900/30 text-red-600 bg-red-50/60 hover:bg-red-100 dark:text-red-400 dark:bg-red-950/20 transition-all"
+                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
                         title="Hapus Rapat"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">Hapus</span>
+                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                        <span>Hapus</span>
                       </button>
 
                       <button 
                         onClick={() => setExpandedMeetingId(expanded ? null : mtg.id)} 
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 text-slate-500 bg-slate-50 hover:bg-slate-100 dark:text-slate-400 dark:bg-slate-800 transition-all"
+                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200 dark:border-slate-800 text-slate-500 bg-slate-50 hover:bg-slate-100 dark:text-slate-400 dark:bg-slate-900/30 transition-all active:scale-[0.97]"
                         title="Tampilkan Detail Rapat"
                       >
                         {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                        <span className="hidden sm:inline">{expanded ? 'Tutup' : 'Detail'}</span>
+                        <span>{expanded ? 'Tutup' : 'Detail'}</span>
                       </button>
                     </div>
                   </div>
 
                   {/* Moderator & Notulen badges */}
-                  <div className="flex items-center gap-1.5 text-[11px] mt-2.5">
-                    {mtg.moderator && <span className="px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium border border-slate-200/60 dark:border-slate-700/60">🎙️ {mtg.moderator}</span>}
-                    {mtg.notulen && <span className="px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium border border-slate-200/60 dark:border-slate-700/60">📝 {mtg.notulen}</span>}
+                  <div className="flex items-center gap-2 text-[10px] mt-3 font-semibold">
+                    {mtg.moderator && <span className="px-3 py-1 rounded-xl bg-slate-50/65 dark:bg-slate-900/30 text-slate-600 dark:text-slate-450 border border-slate-200/50 dark:border-slate-800/40">🎙️ {mtg.moderator}</span>}
+                    {mtg.notulen && <span className="px-3 py-1 rounded-xl bg-slate-50/65 dark:bg-slate-900/30 text-slate-600 dark:text-slate-450 border border-slate-200/50 dark:border-slate-800/40">📝 {mtg.notulen}</span>}
                   </div>
                 </div>
 
                 {/* Expanded Detail */}
                 {expanded && (
-                  <div className="border-t border-slate-100 dark:border-slate-800 p-4 md:p-5 pl-5 md:pl-6 space-y-4 bg-slate-50/50 dark:bg-slate-800/20">
+                  <div className="border-t border-slate-100 dark:border-slate-800/55 p-5 pl-6 space-y-5 bg-slate-50/30 dark:bg-slate-900/10">
                     {/* Agenda */}
                     {mtg.agenda && (
                       <div className="space-y-1">
@@ -1224,118 +1353,125 @@ export default function MeetingsPage() {
           })()}
         </div>
       )}
-
       {/* ===== MODAL: CREATE/EDIT MEETING ===== */}
       {showMeetingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 p-5">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingMeetingId ? '✏️ Edit Rapat' : '📋 Jadwalkan Rapat Baru'}</h2>
-              <button onClick={() => setShowMeetingModal(false)}><X className="w-5 h-5 text-slate-500" /></button>
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white/95 dark:bg-slate-950/90 border border-slate-200/50 dark:border-slate-800/40 shadow-luxury rounded-[2.5rem] backdrop-blur-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header - Fixed */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 p-6 shrink-0">
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">{editingMeetingId ? '✏️ Edit Rapat' : '📋 Jadwalkan Rapat Baru'}</h2>
+              <button onClick={() => setShowMeetingModal(false)} className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"><X className="w-5 h-5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200" /></button>
             </div>
-            <form onSubmit={handleSaveMeeting} className="p-5 space-y-4">
-              <div>
-                <label className={labelClass}>Nama Meeting / Rapat *</label>
-                <input type="text" required value={meetingForm.title} onChange={(e) => setMeetingForm({...meetingForm, title: e.target.value})} placeholder="Contoh: Rapat Sinkronisasi Mingguan" className={inputClass} />
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            
+            {/* Form */}
+            <form onSubmit={handleSaveMeeting} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Body */}
+              <div className="p-6 space-y-5 overflow-y-auto flex-1 no-scrollbar pb-4">
                 <div>
-                  <label className={labelClass}>Tanggal</label>
-                  <input type="date" value={meetingForm.date} onChange={(e) => setMeetingForm({...meetingForm, date: e.target.value})} className={inputClass} />
+                  <label className={labelClass}>Nama Meeting / Rapat *</label>
+                  <input type="text" required value={meetingForm.title} onChange={(e) => setMeetingForm({...meetingForm, title: e.target.value})} placeholder="Contoh: Rapat Sinkronisasi Mingguan" className={inputClass} />
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div>
+                    <label className={labelClass}>Tanggal</label>
+                    <input type="date" value={meetingForm.date} onChange={(e) => setMeetingForm({...meetingForm, date: e.target.value})} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Jam</label>
+                    <input type="time" value={meetingForm.time} onChange={(e) => setMeetingForm({...meetingForm, time: e.target.value})} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Status</label>
+                    <select value={meetingForm.status} onChange={(e) => setMeetingForm({...meetingForm, status: e.target.value})} className={inputClass}>
+                      {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div>
-                  <label className={labelClass}>Jam</label>
-                  <input type="time" value={meetingForm.time} onChange={(e) => setMeetingForm({...meetingForm, time: e.target.value})} className={inputClass} />
+                  <label className={labelClass}>Lokasi</label>
+                  <input type="text" value={meetingForm.location} onChange={(e) => setMeetingForm({...meetingForm, location: e.target.value})} placeholder="Ruang Rapat Lt 2, Zoom, dll." className={inputClass} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelClass}>Moderator</label>
+                    <input type="text" value={meetingForm.moderator} onChange={(e) => setMeetingForm({...meetingForm, moderator: e.target.value})} placeholder="Nama moderator" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Notulen</label>
+                    <input type="text" value={meetingForm.notulen} onChange={(e) => setMeetingForm({...meetingForm, notulen: e.target.value})} placeholder="Nama pencatat" className={inputClass} />
+                  </div>
                 </div>
                 <div>
-                  <label className={labelClass}>Status</label>
-                  <select value={meetingForm.status} onChange={(e) => setMeetingForm({...meetingForm, status: e.target.value})} className={inputClass}>
-                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <label className={labelClass}>Agenda Rapat</label>
+                  <textarea rows={2} value={meetingForm.agenda} onChange={(e) => setMeetingForm({...meetingForm, agenda: e.target.value})} placeholder="Topik yang akan dibahas..." className={inputClass} />
                 </div>
-              </div>
-              <div>
-                <label className={labelClass}>Lokasi</label>
-                <input type="text" value={meetingForm.location} onChange={(e) => setMeetingForm({...meetingForm, location: e.target.value})} placeholder="Ruang Rapat Lt 2, Zoom, dll." className={inputClass} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass}>Moderator</label>
-                  <input type="text" value={meetingForm.moderator} onChange={(e) => setMeetingForm({...meetingForm, moderator: e.target.value})} placeholder="Nama moderator" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Notulen</label>
-                  <input type="text" value={meetingForm.notulen} onChange={(e) => setMeetingForm({...meetingForm, notulen: e.target.value})} placeholder="Nama pencatat" className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass}>Agenda Rapat</label>
-                <textarea rows={2} value={meetingForm.agenda} onChange={(e) => setMeetingForm({...meetingForm, agenda: e.target.value})} placeholder="Topik yang akan dibahas..." className={inputClass} />
-              </div>
-              {/* Editor Pembahasan & Keputusan Poin-per-poin (Sinkron) */}
-              <div className="space-y-3 pt-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Pembahasan & Keputusan Rapat (Sinkron)
-                </label>
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
-                  {meetingPoints.map((pt, idx) => (
-                    <div key={idx} className="p-3.5 rounded-2xl bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 relative group space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded bg-slate-200/50 dark:bg-slate-800">
-                          📌 Poin Rapat #{idx + 1}
-                        </span>
-                        {meetingPoints.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeMeetingPoint(idx)}
-                            className="px-2 py-0.5 rounded text-[9px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-200/40 transition-colors"
-                          >
-                            Hapus Poin
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide">
-                            💬 Pembahasan / Masalah
+                {/* Editor Pembahasan & Keputusan Poin-per-poin (Sinkron) */}
+                <div className="space-y-3 pt-2">
+                  <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase mb-2 pl-0.5">
+                    Pembahasan & Keputusan Rapat (Sinkron)
+                  </label>
+                  <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
+                    {meetingPoints.map((pt, idx) => (
+                      <div key={idx} className="p-4 rounded-2xl bg-slate-55/40 dark:bg-slate-900/10 border border-slate-200/40 dark:border-slate-800/40 relative group space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-450 px-2.5 py-0.5 rounded bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/20 dark:border-slate-800/30">
+                            📌 Poin Rapat #{idx + 1}
                           </span>
-                          <textarea
-                            rows={2}
-                            value={pt.discussion}
-                            onChange={(e) => updateMeetingPoint(idx, 'discussion', e.target.value)}
-                            placeholder="Contoh: Kinerja pengurus harian kurang berjalan maksimal"
-                            className="w-full p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
-                          />
+                          {meetingPoints.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeMeetingPoint(idx)}
+                              className="px-2.5 py-1 rounded-lg text-[9px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-200/40 transition-colors"
+                            >
+                              Hapus Poin
+                            </button>
+                          )}
                         </div>
-                        <div className="space-y-1">
-                          <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
-                            ✓ Keputusan / Solusi
-                          </span>
-                          <textarea
-                            rows={2}
-                            value={pt.decision}
-                            onChange={(e) => updateMeetingPoint(idx, 'decision', e.target.value)}
-                            placeholder="Contoh: Restrukturisasi organisasi baru"
-                            className="w-full p-2.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
-                          />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                          <div className="space-y-1.5">
+                            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider pl-0.5">
+                              💬 Pembahasan / Masalah
+                            </span>
+                            <textarea
+                              rows={2}
+                              value={pt.discussion}
+                              onChange={(e) => updateMeetingPoint(idx, 'discussion', e.target.value)}
+                              placeholder="Contoh: Kinerja pengurus harian kurang berjalan maksimal"
+                              className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-850 text-xs outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider pl-0.5">
+                              ✓ Keputusan / Solusi
+                            </span>
+                            <textarea
+                              rows={2}
+                              value={pt.decision}
+                              onChange={(e) => updateMeetingPoint(idx, 'decision', e.target.value)}
+                              placeholder="Contoh: Restrukturisasi organisasi baru"
+                              className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-850 text-xs outline-none focus:ring-1 focus:ring-accent transition-all resize-none"
+                            />
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                <button
-                  type="button"
-                  onClick={addMeetingPoint}
-                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 hover:text-accent hover:border-accent dark:hover:text-emerald-400 dark:hover:border-emerald-500/60 transition-colors flex items-center justify-center gap-1 bg-slate-50/20"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Tambah Baris Pembahasan & Keputusan Baru
-                </button>
+                  <button
+                    type="button"
+                    onClick={addMeetingPoint}
+                    className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 text-xs font-semibold text-slate-500 hover:text-accent hover:border-accent dark:hover:text-emerald-400 dark:hover:border-emerald-500/60 transition-colors flex items-center justify-center gap-1.5 bg-slate-50/10"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Tambah Baris Pembahasan & Keputusan Baru
+                  </button>
+                </div>
               </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <button type="button" onClick={() => setShowMeetingModal(false)} className="px-4 py-2 rounded-xl border text-xs hover:bg-slate-100 dark:hover:bg-slate-800">Batal</button>
-                <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-semibold text-xs shadow-md hover:opacity-95 flex items-center gap-2 disabled:opacity-50">
+              
+              {/* Footer - Fixed */}
+              <div className="flex justify-end gap-2.5 p-6 border-t border-slate-100 dark:border-slate-800/40 bg-slate-50/20 dark:bg-slate-900/10 shrink-0">
+                <button type="button" onClick={() => setShowMeetingModal(false)} className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs font-bold uppercase tracking-wider transition-all">Batal</button>
+                <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold text-xs uppercase tracking-wider shadow-premium hover:shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-1.5 disabled:opacity-50">
                   <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : editingMeetingId ? 'Perbarui Rapat' : 'Simpan Rapat'}
                 </button>
               </div>
@@ -1346,9 +1482,9 @@ export default function MeetingsPage() {
 
       {/* ===== MODAL: ISI NOTULEN ===== */}
       {showNotulenModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
-            {/* Modal Header */}
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh] overflow-hidden">
+            {/* Modal Header - Fixed */}
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 p-5 shrink-0">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -1361,75 +1497,78 @@ export default function MeetingsPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleSaveNotulen} className="p-5 overflow-y-auto flex-1 space-y-4">
-              <div className="space-y-4 pr-1">
-                {notulenForm.points.map((pt, idx) => (
-                  <div key={idx} className="p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 relative group space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 px-3 py-1 rounded-lg bg-slate-200/50 dark:bg-slate-800">
-                        📌 Poin Rapat #{idx + 1}
-                      </span>
-                      {notulenForm.points.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removePoint(idx)}
-                          className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-200/40 transition-colors"
-                        >
-                          Hapus Poin
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Synchronized Columns: Pembahasan vs Keputusan */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Left: Pembahasan */}
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-0.5">
-                          💬 Pembahasan / Masalah
+            {/* Form */}
+            <form onSubmit={handleSaveNotulen} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Body */}
+              <div className="p-5 overflow-y-auto flex-1 space-y-4 no-scrollbar pb-4">
+                <div className="space-y-4 pr-1">
+                  {notulenForm.points.map((pt, idx) => (
+                    <div key={idx} className="p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 relative group space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 px-3 py-1 rounded-lg bg-slate-200/50 dark:bg-slate-800">
+                          📌 Poin Rapat #{idx + 1}
                         </span>
-                        <textarea
-                          rows={3}
-                          required
-                          value={pt.discussion}
-                          onChange={(e) => updatePoint(idx, 'discussion', e.target.value)}
-                          placeholder="Contoh: Kinerja pengurus harian kurang berjalan maksimal"
-                          className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/80 transition-all resize-none"
-                        />
+                        {notulenForm.points.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removePoint(idx)}
+                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-red-200/40 transition-colors"
+                          >
+                            Hapus Poin
+                          </button>
+                        )}
                       </div>
 
-                      {/* Right: Keputusan */}
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider pl-0.5">
-                          ✓ Keputusan / Solusi
-                        </span>
-                        <textarea
-                          rows={3}
-                          required
-                          value={pt.decision}
-                          onChange={(e) => updatePoint(idx, 'decision', e.target.value)}
-                          placeholder="Contoh: Restrukturisasi organisasi pengurus baru akan dijadwalkan minggu depan"
-                          className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/80 transition-all resize-none"
-                        />
+                      {/* Synchronized Columns: Pembahasan vs Keputusan */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Left: Pembahasan */}
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-0.5">
+                            💬 Pembahasan / Masalah
+                          </span>
+                          <textarea
+                            rows={3}
+                            required
+                            value={pt.discussion}
+                            onChange={(e) => updatePoint(idx, 'discussion', e.target.value)}
+                            placeholder="Contoh: Kinerja pengurus harian kurang berjalan maksimal"
+                            className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/80 transition-all resize-none"
+                          />
+                        </div>
+
+                        {/* Right: Keputusan */}
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider pl-0.5">
+                            ✓ Keputusan / Solusi
+                          </span>
+                          <textarea
+                            rows={3}
+                            required
+                            value={pt.decision}
+                            onChange={(e) => updatePoint(idx, 'decision', e.target.value)}
+                            placeholder="Contoh: Restrukturisasi organisasi pengurus baru akan dijadwalkan minggu depan"
+                            className="w-full p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/80 transition-all resize-none"
+                          />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                {/* Add Point Action Button */}
+                <button
+                  type="button"
+                  onClick={addPoint}
+                  className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 hover:text-accent hover:border-accent dark:hover:text-emerald-400 dark:hover:border-emerald-500/60 transition-colors flex items-center justify-center gap-1.5 bg-slate-50/20"
+                >
+                  <Plus className="w-4 h-4" /> Tambah Baris Pembahasan & Keputusan Baru
+                </button>
               </div>
 
-              {/* Add Point Action Button */}
-              <button
-                type="button"
-                onClick={addPoint}
-                className="w-full py-3 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-xs font-semibold text-slate-500 hover:text-accent hover:border-accent dark:hover:text-emerald-400 dark:hover:border-emerald-500/60 transition-colors flex items-center justify-center gap-1.5 bg-slate-50/20"
-              >
-                <Plus className="w-4 h-4" /> Tambah Baris Pembahasan & Keputusan Baru
-              </button>
-
-              {/* Modal Footer */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <button type="button" onClick={() => setShowNotulenModal(false)} className="px-4 py-2 rounded-xl border text-xs hover:bg-slate-100 dark:hover:bg-slate-800">Batal</button>
-                <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-semibold text-xs shadow-md hover:opacity-95 flex items-center gap-2 disabled:opacity-50">
+              {/* Modal Footer - Fixed */}
+              <div className="flex justify-end gap-2.5 p-5 border-t border-slate-100 dark:border-slate-800/40 bg-slate-50/20 dark:bg-slate-900/10 shrink-0">
+                <button type="button" onClick={() => setShowNotulenModal(false)} className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs font-bold uppercase tracking-wider transition-all">Batal</button>
+                <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold text-xs uppercase tracking-wider shadow-premium hover:shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-1.5 disabled:opacity-50">
                   <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : 'Simpan Notulen'}
                 </button>
               </div>
@@ -1440,66 +1579,74 @@ export default function MeetingsPage() {
 
       {/* ===== MODAL: CREATE/EDIT ACTION ITEM ===== */}
       {showTaskModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 p-5">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">{editingTaskId ? '✏️ Edit Action Item' : '🎯 Tambah Action Item'}</h2>
-              <button onClick={() => setShowTaskModal(false)}><X className="w-5 h-5 text-slate-500" /></button>
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-xl bg-white/95 dark:bg-slate-950/90 border border-slate-200/50 dark:border-slate-800/40 shadow-luxury rounded-[2.5rem] backdrop-blur-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header - Fixed */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 p-6 shrink-0">
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">{editingTaskId ? '✏️ Edit Action Item' : '🎯 Tambah Action Item'}</h2>
+              <button onClick={() => setShowTaskModal(false)} className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"><X className="w-5 h-5 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200" /></button>
             </div>
-            <form onSubmit={handleSaveTask} className="p-5 space-y-4">
-              <div>
-                <label className={labelClass}>Pilih Rapat / Meeting *</label>
-                <select
-                  required
-                  value={taskForm.meeting_id}
-                  onChange={(e) => setTaskForm({...taskForm, meeting_id: e.target.value})}
-                  className={inputClass}
-                >
-                  <option value="">-- Pilih Rapat Terkait --</option>
-                  {meetings.map(m => (
-                    <option key={m.id} value={m.id}>{m.title} ({formatDate(m.date)})</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>Judul Action Item *</label>
-                <input type="text" required value={taskForm.title} onChange={(e) => setTaskForm({...taskForm, title: e.target.value})} placeholder="Contoh: Siapkan laporan keuangan" className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>Deskripsi</label>
-                <textarea rows={2} value={taskForm.description} onChange={(e) => setTaskForm({...taskForm, description: e.target.value})} placeholder="Penjelasan tugas secara detail..." className={inputClass} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+            
+            {/* Form */}
+            <form onSubmit={handleSaveTask} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Body */}
+              <div className="p-6 space-y-5 overflow-y-auto flex-1 no-scrollbar pb-4">
                 <div>
-                  <label className={labelClass}>PIC (Penanggung Jawab) *</label>
-                  <input type="text" required value={taskForm.pic} onChange={(e) => setTaskForm({...taskForm, pic: e.target.value})} placeholder="Nama penanggung jawab" className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass}>Deadline</label>
-                  <input type="date" value={taskForm.deadline} onChange={(e) => setTaskForm({...taskForm, deadline: e.target.value})} className={inputClass} />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className={labelClass}>Prioritas</label>
-                  <select value={taskForm.priority} onChange={(e) => setTaskForm({...taskForm, priority: e.target.value})} className={inputClass}>
-                    {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                  <label className={labelClass}>Pilih Rapat / Meeting *</label>
+                  <select
+                    required
+                    value={taskForm.meeting_id}
+                    onChange={(e) => setTaskForm({...taskForm, meeting_id: e.target.value})}
+                    className={inputClass}
+                  >
+                    <option value="">-- Pilih Rapat Terkait --</option>
+                    {meetings.map(m => (
+                      <option key={m.id} value={m.id}>{m.title} ({formatDate(m.date)})</option>
+                    ))}
                   </select>
                 </div>
                 <div>
-                  <label className={labelClass}>Status</label>
-                  <select value={taskForm.status} onChange={(e) => setTaskForm({...taskForm, status: e.target.value})} className={inputClass}>
-                    {TASK_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <label className={labelClass}>Judul Action Item *</label>
+                  <input type="text" required value={taskForm.title} onChange={(e) => setTaskForm({...taskForm, title: e.target.value})} placeholder="Contoh: Siapkan laporan keuangan" className={inputClass} />
                 </div>
                 <div>
-                  <label className={labelClass}>Progress (%)</label>
-                  <input type="number" min={0} max={100} value={taskForm.progress} onChange={(e) => setTaskForm({...taskForm, progress: e.target.value})} className={inputClass} />
+                  <label className={labelClass}>Deskripsi</label>
+                  <textarea rows={2} value={taskForm.description} onChange={(e) => setTaskForm({...taskForm, description: e.target.value})} placeholder="Penjelasan tugas secara detail..." className={inputClass} />
+                </div>
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div>
+                    <label className={labelClass}>PIC (Penanggung Jawab) *</label>
+                    <input type="text" required value={taskForm.pic} onChange={(e) => setTaskForm({...taskForm, pic: e.target.value})} placeholder="Nama penanggung jawab" className={inputClass} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Deadline</label>
+                    <input type="date" value={taskForm.deadline} onChange={(e) => setTaskForm({...taskForm, deadline: e.target.value})} className={inputClass} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3.5">
+                  <div>
+                    <label className={labelClass}>Prioritas</label>
+                    <select value={taskForm.priority} onChange={(e) => setTaskForm({...taskForm, priority: e.target.value})} className={inputClass}>
+                      {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Status</label>
+                    <select value={taskForm.status} onChange={(e) => setTaskForm({...taskForm, status: e.target.value})} className={inputClass}>
+                      {TASK_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Progress (%)</label>
+                    <input type="number" min={0} max={100} value={taskForm.progress} onChange={(e) => setTaskForm({...taskForm, progress: e.target.value})} className={inputClass} />
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
-                <button type="button" onClick={() => setShowTaskModal(false)} className="px-4 py-2 rounded-xl border text-xs hover:bg-slate-100">Batal</button>
-                <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-semibold text-xs shadow-md hover:opacity-95 flex items-center gap-2 disabled:opacity-50">
+
+              {/* Footer - Fixed */}
+              <div className="flex justify-end gap-2.5 p-6 border-t border-slate-100 dark:border-slate-800/40 bg-slate-50/20 dark:bg-slate-900/10 shrink-0">
+                <button type="button" onClick={() => setShowTaskModal(false)} className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs font-bold uppercase tracking-wider transition-all">Batal</button>
+                <button type="submit" disabled={saving} className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold text-xs uppercase tracking-wider shadow-premium hover:shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-1.5 disabled:opacity-50">
                   <Save className="w-4 h-4" /> {saving ? 'Menyimpan...' : editingTaskId ? 'Perbarui' : 'Simpan Action Item'}
                 </button>
               </div>
@@ -1510,36 +1657,36 @@ export default function MeetingsPage() {
 
       {/* ===== BOTTOM SHEET: AKSI RAPAT MOBILE ===== */}
       {mobileActionMeeting && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+        <div className="fixed inset-0 z-[100000] flex items-end justify-center bg-slate-950/40 backdrop-blur-sm animate-fadeIn">
           {/* Click outside to close */}
           <div className="absolute inset-0" onClick={() => setMobileActionMeeting(null)} />
           
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl p-5 shadow-2xl border-t border-slate-200 dark:border-slate-800 z-10 animate-slideUp">
+          <div className="w-full max-w-md bg-white/95 dark:bg-slate-950/95 backdrop-blur-2xl rounded-t-[2.5rem] p-6 shadow-luxury border-t border-slate-200/50 dark:border-slate-800/40 z-10 animate-slideUp">
             {/* Header Handle */}
-            <div className="w-12 h-1.5 bg-slate-300 dark:bg-slate-700 rounded-full mx-auto mb-4" />
+            <div className="w-10 h-1 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-4" />
             
             <div className="mb-4">
-              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white truncate">
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white truncate">
                 {mobileActionMeeting.title}
               </h3>
-              <p className="text-[10px] text-slate-500 mt-0.5">Pilih tindakan yang ingin dilakukan</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-0.5">Pilih tindakan yang ingin dilakukan</p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1 no-scrollbar">
               <button
                 onClick={() => {
                   const mtg = mobileActionMeeting;
                   setMobileActionMeeting(null);
                   openNotulen(mtg);
                 }}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-amber-200/40 dark:border-amber-900/30 text-left bg-amber-50/40 dark:bg-amber-950/20 text-slate-800 dark:text-slate-200 hover:bg-amber-50"
+                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-amber-250/20 dark:border-amber-900/10 text-left bg-amber-50/20 dark:bg-amber-950/10 text-slate-800 dark:text-slate-200 hover:scale-[1.01] transition-transform"
               >
-                <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400">
-                  <MessageSquare className="w-4 h-4" />
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <MessageSquare className="w-4.5 h-4.5" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900 dark:text-white">Isi Notulen Rapat</p>
-                  <p className="text-[9px] text-slate-500 dark:text-slate-400">Tulis poin pembahasan & keputusan secara sinkron</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Tulis poin pembahasan & keputusan secara sinkron</p>
                 </div>
               </button>
 
@@ -1550,14 +1697,31 @@ export default function MeetingsPage() {
                   setMobileActionMeeting(null);
                   exportToPDF(mtg, mtgTasks);
                 }}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-emerald-200/40 dark:border-emerald-900/30 text-left bg-emerald-50/40 dark:bg-emerald-950/20 text-slate-800 dark:text-slate-200 hover:bg-emerald-50"
+                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-emerald-250/20 dark:border-emerald-900/10 text-left bg-emerald-50/20 dark:bg-emerald-950/10 text-slate-800 dark:text-slate-200 hover:scale-[1.01] transition-transform"
               >
-                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400">
-                  <FileDown className="w-4 h-4" />
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <FileDown className="w-4.5 h-4.5" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900 dark:text-white">Unduh PDF Notulen</p>
-                  <p className="text-[9px] text-slate-500 dark:text-slate-400">Ekspor dokumen resmi ke file PDF</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Ekspor dokumen resmi ke file PDF</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => {
+                  const mtg = mobileActionMeeting;
+                  setMobileActionMeeting(null);
+                  shareToWhatsApp(mtg);
+                }}
+                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-accent/20 dark:border-accent/10 text-left bg-accent/5 text-slate-800 dark:text-slate-200 hover:scale-[1.01] transition-transform"
+              >
+                <div className="p-2 rounded-xl bg-accent/10 text-accent">
+                  <Share2 className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">Bagikan ke WhatsApp</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Kirim ringkasan notulen ke grup WA tim</p>
                 </div>
               </button>
 
@@ -1567,14 +1731,14 @@ export default function MeetingsPage() {
                   setMobileActionMeeting(null);
                   openCreateTask(mtg.id);
                 }}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-green-200/40 dark:border-green-900/30 text-left bg-green-50/40 dark:bg-green-950/20 text-slate-800 dark:text-slate-200 hover:bg-green-50"
+                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-green-250/20 dark:border-green-900/10 text-left bg-green-50/20 dark:bg-green-950/10 text-slate-800 dark:text-slate-200 hover:scale-[1.01] transition-transform"
               >
-                <div className="p-2 rounded-xl bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-400">
-                  <ClipboardList className="w-4 h-4" />
+                <div className="p-2 rounded-xl bg-green-500/10 text-green-600 dark:text-green-400">
+                  <ClipboardList className="w-4.5 h-4.5" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900 dark:text-white">Tambah Tugas Tindak Lanjut</p>
-                  <p className="text-[9px] text-slate-500 dark:text-slate-400">Delegasikan action items rapat ke petugas</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Delegasikan action items rapat ke petugas</p>
                 </div>
               </button>
 
@@ -1584,14 +1748,14 @@ export default function MeetingsPage() {
                   setMobileActionMeeting(null);
                   openEditMeeting(mtg);
                 }}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-blue-200/40 dark:border-blue-900/30 text-left bg-blue-50/40 dark:bg-blue-950/20 text-slate-800 dark:text-slate-200 hover:bg-blue-50"
+                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-blue-250/20 dark:border-blue-900/10 text-left bg-blue-50/20 dark:bg-blue-950/10 text-slate-800 dark:text-slate-200 hover:scale-[1.01] transition-transform"
               >
-                <div className="p-2 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400">
-                  <Edit3 className="w-4 h-4" />
+                <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  <Edit3 className="w-4.5 h-4.5" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900 dark:text-white">Edit Detail Rapat</p>
-                  <p className="text-[9px] text-slate-500 dark:text-slate-400">Ubah judul, tanggal, agenda, atau moderator</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Ubah judul, tanggal, agenda, atau moderator</p>
                 </div>
               </button>
 
@@ -1601,24 +1765,57 @@ export default function MeetingsPage() {
                   setMobileActionMeeting(null);
                   handleDeleteMeeting(mtg.id);
                 }}
-                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-red-200/40 dark:border-red-900/30 text-left bg-red-50/40 dark:bg-red-950/20 text-slate-800 dark:text-slate-200 hover:bg-red-50"
+                className="w-full flex items-center gap-3 p-3 rounded-2xl border border-red-250/20 dark:border-red-900/10 text-left bg-red-50/20 dark:bg-red-950/10 text-slate-800 dark:text-slate-200 hover:scale-[1.01] transition-transform"
               >
-                <div className="p-2 rounded-xl bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400">
-                  <Trash2 className="w-4 h-4" />
+                <div className="p-2 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400">
+                  <Trash2 className="w-4.5 h-4.5" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-red-600 dark:text-red-400">Hapus Rapat</p>
-                  <p className="text-[9px] text-slate-500 dark:text-slate-400">Hapus permanen rapat beserta tugas-tugasnya</p>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Hapus permanen rapat beserta tugas-tugasnya</p>
                 </div>
               </button>
             </div>
 
             <button
               onClick={() => setMobileActionMeeting(null)}
-              className="w-full mt-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 transition-colors"
+              className="w-full mt-4 py-3.5 rounded-2xl bg-slate-100 dark:bg-slate-900 text-xs font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-200/80 dark:hover:bg-slate-800 border border-slate-200/30 dark:border-slate-800/40 transition-colors active:scale-[0.98]"
             >
               Batal / Tutup
             </button>
+          </div>
+        </div>
+      )}
+      {/* ===== CUSTOM CONFIRMATION MODAL ===== */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-[110000] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/40 shadow-luxury rounded-[2.5rem] p-6 text-center space-y-4 animate-scaleIn">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto shadow-inner">
+              <AlertCircle className="w-6 h-6 stroke-[2.5px]" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{confirmModal.title}</h3>
+              <p className="text-[10px] text-slate-500 dark:text-slate-450 font-semibold leading-relaxed px-2">{confirmModal.message}</p>
+            </div>
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-900 text-[10px] font-bold uppercase tracking-wider transition-all"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal({ ...confirmModal, show: false });
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold text-[10px] uppercase tracking-wider shadow-premium hover:shadow-red-500/20 active:scale-[0.98] transition-all"
+              >
+                Ya, Hapus
+              </button>
+            </div>
           </div>
         </div>
       )}

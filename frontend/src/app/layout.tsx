@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#14532D',
+  themeColor: '#0d3e26',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -35,6 +35,26 @@ export default function RootLayout({
             </AuthProvider>
           </ThemeProvider>
         </QueryProvider>
+        
+        {/* Service Worker Registration for PWA */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(
+                    function(registration) {
+                      console.log('PWA Service Worker registered on scope:', registration.scope);
+                    },
+                    function(err) {
+                      console.error('PWA Service Worker registration failed:', err);
+                    }
+                  );
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );

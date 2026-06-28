@@ -60,31 +60,31 @@ export default function MonitoringPage() {
   return (
     <AppLayout>
       {/* Header - Konsisten dengan Manajemen Rapat */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between pb-3.5 border-b border-slate-200/50 dark:border-slate-800/40 animate-fadeIn">
+        <div className="flex items-center justify-between w-full md:w-auto">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2">
-              <BarChart2 className="w-6 h-6 text-accent shrink-0" />
+            <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2.5 tracking-tight">
+              <BarChart2 className="w-5.5 h-5.5 text-accent shrink-0 stroke-2" />
               Monitoring Rapat
             </h1>
-            <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] md:text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-medium">
               Pantau persentase keberhasilan dan status penyelesaian seluruh keputusan rapat
             </p>
           </div>
           <Link
             href="/meetings"
-            className="md:hidden px-3.5 py-2 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-transform"
+            className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
           >
             Rapat
           </Link>
         </div>
-        <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
+        <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-end">
           <div className="relative flex items-center">
-            <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 pointer-events-none" />
+            <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="pl-8 pr-3 py-2 rounded-xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-accent/50 transition-all cursor-pointer"
+              className="pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-accent/10 transition-all cursor-pointer text-slate-700 dark:text-slate-350"
             >
               <option value="Semua">Semua Status</option>
               <option value="Belum">Belum Dikerjakan</option>
@@ -95,7 +95,7 @@ export default function MonitoringPage() {
           </div>
           <Link
             href="/meetings"
-            className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs items-center justify-center gap-2 shadow-lg hover:opacity-95 transition-all"
+            className="hidden md:flex px-5 py-2.5 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs items-center justify-center gap-1.5 border border-slate-200/50 dark:border-slate-800/40 hover:bg-slate-250/30 dark:hover:bg-slate-800 transition-colors"
           >
             Kembali ke Rapat
           </Link>
@@ -103,70 +103,70 @@ export default function MonitoringPage() {
       </div>
 
       {/* Hero Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <div className="glass-card p-5 border-t-4 border-t-blue-500">
-          <p className="text-xs font-medium text-slate-500 uppercase">Total Meeting</p>
-          <p className="text-2xl font-bold mt-1 text-slate-900 dark:text-white">{summary.totalMeeting}</p>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-5">
+        <div className="premium-card p-5 border-t-2 border-t-blue-500">
+          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Meeting</p>
+          <p className="text-2xl md:text-3xl font-extrabold mt-1 text-slate-900 dark:text-white tracking-tight">{summary.totalMeeting}</p>
         </div>
 
-        <div className="glass-card p-5 border-t-4 border-t-purple-500">
-          <p className="text-xs font-medium text-slate-500 uppercase">Total Action</p>
-          <p className="text-2xl font-bold mt-1 text-slate-900 dark:text-white">{summary.totalAction}</p>
+        <div className="premium-card p-5 border-t-2 border-t-purple-500">
+          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Action</p>
+          <p className="text-2xl md:text-3xl font-extrabold mt-1 text-slate-900 dark:text-white tracking-tight">{summary.totalAction}</p>
         </div>
 
-        <div className="glass-card p-5 border-t-4 border-t-amber-500">
-          <p className="text-xs font-medium text-slate-500 uppercase">Sedang Proses</p>
-          <p className="text-2xl font-bold mt-1 text-amber-500">{summary.statusBreakdown.proses}</p>
+        <div className="premium-card p-5 border-t-2 border-t-amber-500">
+          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Sedang Proses</p>
+          <p className="text-2xl md:text-3xl font-extrabold mt-1 text-amber-500 tracking-tight">{summary.statusBreakdown.proses}</p>
         </div>
 
-        <div className="glass-card p-5 border-t-4 border-t-emerald-500">
-          <p className="text-xs font-medium text-slate-500 uppercase">Selesai</p>
-          <p className="text-2xl font-bold mt-1 text-emerald-500">{summary.statusBreakdown.selesai}</p>
+        <div className="premium-card p-5 border-t-2 border-t-emerald-500">
+          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Selesai</p>
+          <p className="text-2xl md:text-3xl font-extrabold mt-1 text-emerald-500 tracking-tight">{summary.statusBreakdown.selesai}</p>
         </div>
 
-        <div className="glass-card p-5 border-t-4 border-t-red-500">
-          <p className="text-xs font-medium text-slate-500 uppercase">Overdue</p>
-          <p className="text-2xl font-bold mt-1 text-red-500 animate-pulse">{summary.statusBreakdown.overdue}</p>
+        <div className="premium-card p-5 border-t-2 border-t-red-500">
+          <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Overdue</p>
+          <p className="text-2xl md:text-3xl font-extrabold mt-1 text-red-500 animate-pulse tracking-tight">{summary.statusBreakdown.overdue}</p>
         </div>
       </div>
 
       {/* Progress Bar Eksekutif */}
-      <div className="glass-card p-6 space-y-3">
+      <div className="premium-card p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-white">Overall Success Rate (Tingkat Keberhasilan)</h3>
-            <p className="text-xs text-slate-500">Persentase gabungan seluruh tindak lanjut rapat yang telah diselesaikan</p>
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">Overall Success Rate (Tingkat Keberhasilan)</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Persentase gabungan seluruh tindak lanjut rapat yang telah diselesaikan</p>
           </div>
           <span className="text-2xl font-black text-accent">{summary.progress}%</span>
         </div>
-        <div className="w-full bg-slate-200 dark:bg-slate-800 h-4 rounded-full overflow-hidden p-0.5">
+        <div className="w-full bg-slate-200 dark:bg-slate-850 h-5 rounded-full overflow-hidden p-0.5 border border-slate-300/30 dark:border-slate-800/40">
           <div
-            className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-1000 shadow-md"
+            className="bg-gradient-to-r from-primary to-accent h-full rounded-full transition-all duration-1000 shadow-premium"
             style={{ width: `${summary.progress}%` }}
           />
         </div>
       </div>
 
       {/* Action Items List */}
-      <div className="glass-card p-6 space-y-4">
-        <h3 className="font-bold text-base text-slate-900 dark:text-white">Daftar Pantauan Action Item Terbaru</h3>
-        <div className="space-y-3">
+      <div className="premium-card p-6 space-y-5">
+        <h3 className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">Daftar Pantauan Action Item Terbaru</h3>
+        <div className="space-y-3.5">
           {summary.recentActionItems.map((act: any) => (
-            <div key={act.id} className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div key={act.id} className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-250/20 dark:border-slate-800/40 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all">
               <div>
-                <p className="font-bold text-sm text-slate-900 dark:text-white">{act.title}</p>
-                <p className="text-xs text-slate-500 mt-0.5">PIC: <span className="font-semibold text-accent">{act.pic}</span> • Deadline: {act.deadline}</p>
+                <p className="font-extrabold text-sm text-slate-900 dark:text-white">{act.title}</p>
+                <p className="text-xs text-slate-500 mt-1 font-medium">PIC: <span className="font-bold text-accent">{act.pic}</span> • Deadline: {act.deadline}</p>
               </div>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-24 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+                  <div className="w-24 bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                     <div className="bg-accent h-full rounded-full" style={{ width: `${act.progress}%` }} />
                   </div>
-                  <span className="text-xs font-bold">{act.progress}%</span>
+                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{act.progress}%</span>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase ${
-                  act.status === 'Overdue' ? 'bg-red-500/10 text-red-500 animate-pulse' :
-                  act.status === 'Selesai' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-500'
+                <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase ${
+                  act.status === 'Overdue' ? 'bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse' :
+                  act.status === 'Selesai' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
                 }`}>
                   {act.status}
                 </span>

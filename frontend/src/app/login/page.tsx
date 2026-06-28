@@ -36,104 +36,104 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-primary/40 to-slate-900 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-[#070b13] via-primary/10 to-[#070b13] relative overflow-hidden">
       {/* Decorative Orbs */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent/20 rounded-full blur-3xl pointer-events-none animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/30 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="w-full max-w-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 dark:border-slate-800 relative z-10">
+      <div className="absolute top-1/4 left-1/4 w-[30rem] h-[30rem] bg-accent/5 rounded-full blur-[120px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
+      <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+ 
+      <div className="w-full max-w-md bg-white/80 dark:bg-slate-950/45 backdrop-blur-2xl rounded-[2rem] p-8 md:p-10 shadow-premium border border-slate-200/50 dark:border-slate-800/30 relative z-10">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-accent mx-auto flex items-center justify-center text-white font-bold text-2xl shadow-lg mb-4">
-            SN
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Smart Notes</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Management System Enterprise Grade
+          <img src="/logo.svg" alt="Smart Notes Logo" className="w-14 h-14 rounded-2xl shadow-premium mx-auto mb-4 object-cover" />
+          <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent tracking-tight">Smart Notes</h1>
+          <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-1">
+            Enterprise Management System
           </p>
         </div>
-
+ 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center gap-3 text-red-600 dark:text-red-400 text-sm">
-            <AlertCircle className="w-5 h-5 shrink-0" />
+          <div className="mb-6 p-3.5 rounded-xl bg-red-500/5 border border-red-500/10 flex items-center gap-3 text-red-600 dark:text-red-400 text-xs font-semibold">
+            <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
             <span>{error}</span>
           </div>
         )}
-
+ 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">
+            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-2">
               Email Address
             </label>
             <div className="relative">
-              <Mail className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@smart.id"
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                className="w-full pl-11 pr-4 py-3 text-xs font-semibold tracking-wide border border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 rounded-xl transition-all duration-200 outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 focus:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
               />
             </div>
           </div>
-
+ 
           <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase mb-2">
+            <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-2">
               Password
             </label>
             <div className="relative">
-              <Lock className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-4 top-1/2 -translate-y-1/2" />
               <input
                 type="password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-accent text-sm"
+                className="w-full pl-11 pr-4 py-3 text-xs font-semibold tracking-wide border border-slate-200/60 dark:border-slate-800/60 bg-white/50 dark:bg-slate-900/20 text-slate-800 dark:text-slate-100 rounded-xl transition-all duration-200 outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 focus:shadow-[0_0_15px_rgba(16,185,129,0.1)]"
               />
             </div>
           </div>
-
-          <div className="flex items-center justify-between text-xs">
-            <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-slate-300">
+ 
+          <div className="flex items-center justify-between text-[11px] font-semibold">
+            <label className="flex items-center gap-2 cursor-pointer text-slate-500 dark:text-slate-400">
               <input
                 type="checkbox"
                 checked={remember}
                 onChange={(e) => setRemember(e.target.checked)}
-                className="rounded text-accent focus:ring-accent"
+                className="rounded border-slate-200 dark:border-slate-800 text-accent focus:ring-accent/30 w-3.5 h-3.5"
               />
               <span>Remember Login</span>
             </label>
-            <a href="#forgot" className="text-accent hover:underline font-semibold">
+            <a href="#forgot" className="text-accent hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors">
               Forgot Password?
             </a>
           </div>
-
+ 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-semibold shadow-lg hover:shadow-accent/40 hover:opacity-95 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold text-xs uppercase tracking-wider shadow-premium hover:shadow-accent/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
                 <span>Sign In ke Workspace</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </>
             )}
           </button>
         </form>
-
+ 
         {/* Demo Credentials Hint */}
-        <div className="mt-8 p-3.5 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/50 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
-          <p className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+        <div className="mt-8 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-900/10 border border-slate-200/40 dark:border-slate-800/40 text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 space-y-1.5">
+          <p className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-2">
             <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> Akun Demo Enterprise:
           </p>
-          <p>Admin: <code className="text-accent font-semibold">admin@smart.id</code> / <code className="text-slate-600 dark:text-slate-300">password123</code></p>
-          <p>Manager: <code className="text-accent font-semibold">manager@smart.id</code> / <code className="text-slate-600 dark:text-slate-300">password123</code></p>
-          <hr className="my-1 border-slate-200 dark:border-slate-800" />
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">
+          <div className="space-y-1 font-medium">
+            <p>Admin: <code className="text-accent font-semibold">admin@smart.id</code> / <code className="text-slate-400 dark:text-slate-500">password123</code></p>
+            <p>Manager: <code className="text-accent font-semibold">manager@smart.id</code> / <code className="text-slate-400 dark:text-slate-500">password123</code></p>
+          </div>
+          <hr className="my-2 border-slate-200/50 dark:border-slate-800/30" />
+          <p className="text-[9px] text-slate-400 dark:text-slate-500 italic leading-normal">
             * Seluruh akun yang didaftarkan via Master Data dapat langsung login dengan email terdaftar & password default: <code className="text-accent font-semibold">password123</code>
           </p>
         </div>

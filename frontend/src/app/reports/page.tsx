@@ -26,73 +26,73 @@ export default function ReportsPage() {
   return (
     <AppLayout>
       {/* Header - Konsisten dengan Manajemen Rapat */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between pb-3.5 border-b border-slate-200/50 dark:border-slate-800/40 animate-fadeIn">
+        <div className="flex items-center justify-between w-full md:w-auto">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2">
-              <FileText className="w-6 h-6 text-accent shrink-0" />
+            <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2.5 tracking-tight">
+              <FileText className="w-5.5 h-5.5 text-accent shrink-0 stroke-2" />
               Pusat Laporan Eksekutif
             </h1>
-            <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] md:text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-medium">
               Unduh laporan formal untuk kebutuhan manajemen dan audit internal
             </p>
           </div>
           <Link
             href="/monitoring"
-            className="md:hidden px-3.5 py-2 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-transform"
+            className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
           >
             Dashboard
           </Link>
         </div>
-        <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
+        <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-end">
           <Link
             href="/monitoring"
-            className="hidden md:flex text-center px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-xs items-center justify-center gap-1.5 hover:bg-slate-200 transition-colors"
+            className="hidden md:flex text-center px-4 py-2.5 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs items-center justify-center gap-1.5 border border-slate-200/50 dark:border-slate-800/40 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
           >
             <TrendingUp className="w-4 h-4 text-accent" /> Dashboard
           </Link>
           <button
             onClick={() => window.print()}
-            className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs items-center justify-center gap-2 shadow-lg hover:opacity-95 transition-all"
+            className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            <Printer className="w-4 h-4" /> Cetak Semua Laporan
+            <Printer className="w-4 h-4 stroke-[2px]" /> Cetak Semua Laporan
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5 pt-4">
         {reports.map((rep, idx) => (
-          <div key={idx} className="bg-white dark:bg-slate-900 p-4 md:p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md transition-all space-y-4 flex flex-col justify-between relative overflow-hidden">
-            <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-primary to-accent" />
+          <div key={idx} className="premium-card p-5 relative overflow-hidden flex flex-col justify-between gap-4 hover:shadow-md hover:scale-[1.01] transition-all duration-200">
+            <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-primary to-accent" />
             <div className="pl-2">
-              <h3 className="font-bold text-base md:text-lg text-slate-900 dark:text-white">{rep.title}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{rep.desc}</p>
+              <h3 className="font-extrabold text-base md:text-lg text-slate-900 dark:text-white tracking-tight">{rep.title}</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 leading-relaxed font-semibold">{rep.desc}</p>
             </div>
-            <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100 dark:border-slate-800 pl-2">
+            <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100 dark:border-slate-850 pl-2">
               <button
                 onClick={() => handleExport('PDF')}
                 disabled={!!downloading}
-                className="px-3 py-1.5 bg-red-500/10 text-red-600 hover:bg-red-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                className="px-3.5 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-650 dark:text-red-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-red-500/10"
               >
                 <Download className="w-3.5 h-3.5" /> PDF
               </button>
               <button
                 onClick={() => handleExport('Excel')}
                 disabled={!!downloading}
-                className="px-3 py-1.5 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                className="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-650 dark:text-emerald-450 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-emerald-500/10"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
               </button>
               <button
                 onClick={() => handleExport('CSV')}
                 disabled={!!downloading}
-                className="px-3 py-1.5 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                className="px-3.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-650 dark:text-blue-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-blue-500/10"
               >
                 <Download className="w-3.5 h-3.5" /> CSV
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-3 py-1.5 bg-slate-500/10 text-slate-600 dark:text-slate-300 hover:bg-slate-500/20 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors ml-auto"
+                className="px-3.5 py-2 bg-slate-500/10 hover:bg-slate-500/20 text-slate-650 dark:text-slate-350 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border border-slate-500/10 ml-auto"
               >
                 <Printer className="w-3.5 h-3.5" /> Print
               </button>

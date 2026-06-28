@@ -22,6 +22,8 @@ import {
   X,
   CheckCircle2,
   TrendingUp,
+  AlertCircle,
+  CheckSquare,
 } from 'lucide-react';
 
 export default function NotesPage() {
@@ -46,6 +48,19 @@ export default function NotesPage() {
     priority: 'Medium',
     visibility: 'Private',
     is_favorite: 'false',
+  });
+
+  // Custom Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    show: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    show: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
   });
 
   const categories = [
@@ -178,8 +193,16 @@ export default function NotesPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus catatan ini?')) return;
+  const handleDelete = (id: string) => {
+    setConfirmModal({
+      show: true,
+      title: 'Hapus Catatan',
+      message: 'Apakah Anda yakin ingin menghapus catatan ini secara permanen?',
+      onConfirm: () => executeDelete(id),
+    });
+  };
+
+  const executeDelete = async (id: string) => {
     const previousNotes = [...notes];
     const updatedNotes = notes.filter(n => n.id !== id);
     
@@ -260,45 +283,49 @@ export default function NotesPage() {
     return matchCat && matchPrio && matchSearch;
   });
 
+  // ===== INPUT STYLE =====
+  const inputClass = "w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/30 text-slate-800 dark:text-slate-100 transition-all duration-200 outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 focus:shadow-[0_0_15px_rgba(16,185,129,0.08)]";
+  const labelClass = "block text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase mb-2 pl-0.5";
+
   return (
     <AppLayout>
       {/* Header - Konsisten dengan Manajemen Rapat */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between pb-3.5 border-b border-slate-200/50 dark:border-slate-800/40">
+        <div className="flex items-center justify-between w-full md:w-auto">
           <div>
-            <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2">
-              <FileText className="w-6 h-6 text-accent shrink-0" />
+            <h1 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-slate-900 via-primary to-accent dark:from-white dark:to-emerald-400 bg-clip-text text-transparent flex items-center gap-2.5 tracking-tight">
+              <FileText className="w-5.5 h-5.5 text-accent shrink-0 stroke-2" />
               Manajemen Catatan
             </h1>
-            <p className="text-[11px] md:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <p className="text-[11px] md:text-xs text-slate-400 dark:text-slate-500 mt-0.5 font-medium">
               Kelola ide, riset, dan dokumentasi penting Anda
             </p>
           </div>
           <button
             onClick={() => handleOpenModal()}
-            className="md:hidden px-3.5 py-2 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-transform"
+            className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
           >
-            <Plus className="w-4 h-4" /> Catatan
+            <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Catatan
           </button>
         </div>
-        <div className="flex items-center gap-2 self-stretch md:self-auto justify-end">
+        <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-end">
           <Link
             href="/monitoring"
-            className="flex-1 md:flex-initial text-center px-3.5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 hover:bg-slate-200 transition-colors"
+            className="flex-1 md:flex-initial text-center px-4 py-2.5 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-slate-200/50 dark:border-slate-800/40 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
           >
             <TrendingUp className="w-4 h-4 text-accent" /> Dashboard
           </Link>
           <button
             onClick={() => handleOpenModal()}
-            className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary to-accent text-white font-semibold rounded-xl text-xs items-center justify-center gap-2 shadow-lg hover:opacity-95 transition-all"
+            className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
-            <Plus className="w-4 h-4" /> Buat Catatan Baru
+            <Plus className="w-4 h-4 stroke-[2.5px]" /> Buat Catatan Baru
           </button>
         </div>
       </div>
 
       {/* Tabs / Filter Kategori - Konsisten dengan Manajemen Rapat */}
-      <div className="flex gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto no-scrollbar">
+      <div className="flex p-1 bg-slate-100/80 dark:bg-slate-900/40 rounded-2xl w-fit border border-slate-200/30 dark:border-slate-850 overflow-x-auto no-scrollbar max-w-full">
         {categories.map((cat) => {
           const isSelected = selectedCategory === cat;
           const count = cat === 'Semua' ? notes.length : notes.filter(n => n.category === cat).length;
@@ -306,10 +333,10 @@ export default function NotesPage() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 whitespace-nowrap ${
                 isSelected
-                  ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md'
-                  : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                  ? 'bg-white dark:bg-slate-950 text-primary dark:text-accent shadow-sm border border-slate-250/20 dark:border-slate-800/40'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
               {cat === 'Semua' ? `Daftar Catatan (${count})` : `${cat} (${count})`}
@@ -319,9 +346,9 @@ export default function NotesPage() {
       </div>
 
       {/* Search & Filter Controls - Konsisten dengan Rapat */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="premium-card p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Cari Catatan</label>
+          <label className={labelClass}>Cari Catatan</label>
           <div className="relative">
             <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -329,21 +356,21 @@ export default function NotesPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari judul atau isi catatan..."
-              className="w-full pl-10 pr-8 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 text-xs outline-none focus:ring-1 focus:ring-accent transition-all"
+              className="w-full pl-10 pr-8 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/30 text-slate-800 dark:text-slate-100 transition-all duration-200 outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                <X className="w-3.5 h-3.5" />
+              <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Prioritas</label>
+          <label className={labelClass}>Prioritas</label>
           <select
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value)}
-            className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 text-xs outline-none cursor-pointer"
+            className={inputClass}
           >
             <option value="Semua">Semua Prioritas</option>
             <option value="Low">Low Priority</option>
@@ -353,11 +380,11 @@ export default function NotesPage() {
           </select>
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Kategori</label>
+          <label className={labelClass}>Kategori</label>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="w-full px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-800/80 text-xs outline-none cursor-pointer"
+            className={inputClass}
           >
             {categories.map(c => (
               <option key={c} value={c}>{c === 'Semua' ? 'Semua Kategori' : c}</option>
@@ -385,55 +412,63 @@ export default function NotesPage() {
           </button>
         </div>
       ) : (
-        <div className="space-y-3.5 md:space-y-4 pb-2">
+        <div className="space-y-4 pb-4">
           {filteredNotes.map((note) => {
             const badgeStyle = getCategoryColor(note.category);
+            const isFav = note.is_favorite === 'true' || note.is_favorite === true;
             return (
               <div
                 key={note.id}
-                className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm hover:shadow-md transition-all relative overflow-hidden"
+                className="premium-card p-0 relative overflow-hidden"
               >
-                <div className="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-primary to-accent" />
+                <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-primary to-accent" />
                 
                 {/* Header Catatan */}
-                <div className="p-4 md:p-5 pl-5 md:pl-6">
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-2.5">
+                <div className="p-5 pl-6 pb-4">
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <h3 className="text-base md:text-lg font-bold text-slate-900 dark:text-white leading-snug">{note.title || 'Tanpa Judul'}</h3>
-                        <span className={`text-[10px] px-2.5 py-0.5 rounded-lg font-extrabold uppercase tracking-wide border ${badgeStyle}`}>
+                        <h3 className="text-base md:text-lg font-extrabold text-slate-900 dark:text-white leading-snug tracking-tight">{note.title || 'Tanpa Judul'}</h3>
+                        <span className={`text-[9px] px-2.5 py-0.5 rounded-lg font-bold uppercase tracking-wider border ${badgeStyle}`}>
                           {note.category || 'General'}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-2">
-                        <span className="flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300"><Clock className="w-3.5 h-3.5 text-accent" /> {formatDisplayDate(note.date)}</span>
-                        <span className="flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> Prioritas: {note.priority || 'Medium'}</span>
-                        {note.location && <span className="flex items-center gap-1 text-slate-400"><MapPin className="w-3.5 h-3.5" /> {note.location}</span>}
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 mt-2.5 font-medium">
+                        <span className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-350"><Clock className="w-4 h-4 text-accent" /> {formatDisplayDate(note.date)}</span>
+                        <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> Prioritas: {note.priority || 'Medium'}</span>
+                        {note.location && <span className="flex items-center gap-1.5 text-slate-400"><MapPin className="w-4 h-4" /> {note.location}</span>}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-1 pt-1 md:pt-0 border-t md:border-t-0 border-slate-100 dark:border-slate-800">
+ 
+                    <div className="flex items-center gap-1.5 pt-1 md:pt-0">
                       <button
                         onClick={() => toggleFavorite(note)}
-                        className={`p-2 rounded-xl transition-colors ${
-                          note.is_favorite === 'true' || note.is_favorite === true
-                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-500'
-                            : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-amber-400'
+                        className={`p-2 rounded-xl border transition-all active:scale-[0.97] ${
+                          isFav
+                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-500 border-amber-200/50 dark:border-amber-900/30'
+                            : 'border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-amber-500'
                         }`}
                         title="Favorit"
                       >
-                        <Star className="w-4 h-4 fill-current" />
+                        <Star className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
                       </button>
+                      <Link
+                        href={`/tasks?new=true&title=${encodeURIComponent(note.title || '')}&category=${encodeURIComponent(note.category || '')}`}
+                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-accent transition-all active:scale-[0.97]"
+                        title="Jadikan Tugas"
+                      >
+                        <CheckSquare className="w-4 h-4" />
+                      </Link>
                       <button
                         onClick={() => handleOpenModal(note)}
-                        className="p-2 rounded-xl text-slate-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-500 transition-colors"
+                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-blue-500 transition-all active:scale-[0.97]"
                         title="Edit"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(note.id)}
-                        className="p-2 rounded-xl text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-500 transition-colors"
+                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-all active:scale-[0.97]"
                         title="Hapus"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -441,10 +476,10 @@ export default function NotesPage() {
                     </div>
                   </div>
                 </div>
-
+ 
                 {/* Konten Catatan */}
-                <div className="border-t border-slate-100 dark:border-slate-800/80 p-4 md:p-5 pl-5 md:pl-6 bg-slate-50/50 dark:bg-slate-800/20">
-                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800/50 text-xs md:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-normal">
+                <div className="border-t border-slate-100 dark:border-slate-850 p-5 pl-6 bg-slate-50/20 dark:bg-slate-900/10">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-250/20 dark:border-slate-800/40 text-xs md:text-sm text-slate-700 dark:text-slate-350 leading-relaxed font-semibold">
                     <p className="whitespace-pre-wrap">{note.content || 'Tidak ada konten catatan.'}</p>
                   </div>
                 </div>
@@ -456,129 +491,168 @@ export default function NotesPage() {
 
       {/* Modal CRUD */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl border border-slate-200 dark:border-slate-800 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 mb-4">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <FileText className="w-5 h-5 text-accent" />
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white/95 dark:bg-slate-950/90 border border-slate-200/50 dark:border-slate-800/40 shadow-luxury rounded-[2.5rem] backdrop-blur-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header - Fixed */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 p-6 shrink-0">
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2.5 tracking-tight">
+                <FileText className="w-5 h-5 text-accent stroke-[2.5px]" />
                 {editingNote ? 'Edit Catatan' : 'Buat Catatan Baru'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800">
-                <X className="w-5 h-5 text-slate-500" />
+              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                <X className="w-5 h-5 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200" />
               </button>
             </div>
-
-            <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+ 
+            {/* Form */}
+            <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Body */}
+              <div className="p-6 space-y-5 overflow-y-auto flex-1 no-scrollbar pb-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Judul Catatan</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Contoh: Hasil Riset UI/UX Mobile First"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Kategori</label>
+                    <select
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      className={inputClass}
+                    >
+                      {categories.filter(c => c !== 'Semua').map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+ 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Judul Catatan</label>
+                  <label className={labelClass}>Isi Catatan</label>
+                  <textarea
+                    required
+                    rows={5}
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    placeholder="Tuliskan ide atau kesimpulan catatan di sini..."
+                    className="w-full p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs text-slate-800 dark:text-slate-100 outline-none leading-relaxed focus:border-accent focus:ring-2 focus:ring-accent/10 transition-all duration-200 resize-none font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-650"
+                  />
+                </div>
+ 
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className={labelClass}>Tanggal</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Jam</label>
+                    <input
+                      type="time"
+                      value={formData.time}
+                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Prioritas</label>
+                    <select
+                      value={formData.priority}
+                      onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
+                      className={inputClass}
+                    >
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                      <option value="Critical">Critical</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Visibility</label>
+                    <select
+                      value={formData.visibility}
+                      onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
+                      className={inputClass}
+                    >
+                      <option value="Private">Private</option>
+                      <option value="Shared">Shared</option>
+                    </select>
+                  </div>
+                </div>
+ 
+                <div>
+                  <label className={labelClass}>Lokasi / Keterangan Tempat</label>
                   <input
                     type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Contoh: Hasil Riset UI/UX Mobile First"
-                    className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs focus:ring-2 focus:ring-accent outline-none"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    placeholder="Contoh: Ruang Rapat Lt 3 atau Google Meet"
+                    className={inputClass}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Kategori</label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs focus:ring-2 focus:ring-accent outline-none"
-                  >
-                    {categories.filter(c => c !== 'Semua').map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Isi Catatan</label>
-                <textarea
-                  required
-                  rows={5}
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="Tuliskan ide atau kesimpulan catatan di sini..."
-                  className="w-full p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs focus:ring-2 focus:ring-accent outline-none leading-relaxed"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Tanggal</label>
-                  <input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Jam</label>
-                  <input
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                    className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Prioritas</label>
-                  <select
-                    value={formData.priority}
-                    onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                    className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                    <option value="Critical">Critical</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Visibility</label>
-                  <select
-                    value={formData.visibility}
-                    onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
-                    className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none"
-                  >
-                    <option value="Private">Private</option>
-                    <option value="Shared">Shared</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Lokasi / Keterangan Tempat</label>
-                <input
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="Contoh: Ruang Rapat Lt 3 atau Google Meet"
-                  className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+ 
+              {/* Footer - Fixed */}
+              <div className="flex justify-end gap-2.5 p-6 border-t border-slate-100 dark:border-slate-800/40 bg-slate-50/20 dark:bg-slate-900/10 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold hover:bg-slate-100"
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs font-bold uppercase tracking-wider transition-all"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 rounded-xl bg-gradient-to-r from-primary to-accent text-white text-xs font-semibold shadow-lg hover:opacity-95"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold text-xs uppercase tracking-wider shadow-premium hover:shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-1.5"
                 >
                   Simpan Catatan
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ===== CUSTOM CONFIRMATION MODAL ===== */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-[110000] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/40 shadow-luxury rounded-[2.5rem] p-6 text-center space-y-4 animate-scaleIn">
+            <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-500 flex items-center justify-center mx-auto shadow-inner">
+              <AlertCircle className="w-6 h-6 stroke-[2.5px]" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white tracking-tight">{confirmModal.title}</h3>
+              <p className="text-[10px] text-slate-500 dark:text-slate-450 font-semibold leading-relaxed px-2">{confirmModal.message}</p>
+            </div>
+            <div className="flex gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-900 text-[10px] font-bold uppercase tracking-wider transition-all"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal({ ...confirmModal, show: false });
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 text-white font-bold text-[10px] uppercase tracking-wider shadow-premium hover:shadow-red-500/20 active:scale-[0.98] transition-all"
+              >
+                Ya, Hapus
+              </button>
+            </div>
           </div>
         </div>
       )}
