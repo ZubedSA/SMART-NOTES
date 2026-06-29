@@ -48,6 +48,7 @@ export default function NotesPage() {
     priority: 'Medium',
     visibility: 'Private',
     is_favorite: 'false',
+    is_meeting_draft: 'false',
   });
 
   // Custom Confirmation Modal State
@@ -130,7 +131,11 @@ export default function NotesPage() {
   const handleOpenModal = (note?: any) => {
     if (note) {
       setEditingNote(note);
-      setFormData({ ...note });
+      const isDraft = note.is_meeting_draft === true || String(note.is_meeting_draft).toLowerCase().trim() === 'true';
+      setFormData({
+        ...note,
+        is_meeting_draft: isDraft ? 'true' : 'false',
+      });
     } else {
       setEditingNote(null);
       setFormData({
@@ -145,6 +150,7 @@ export default function NotesPage() {
         priority: 'Medium',
         visibility: 'Private',
         is_favorite: 'false',
+        is_meeting_draft: 'false',
       });
     }
     setShowModal(true);
@@ -600,6 +606,24 @@ export default function NotesPage() {
                     placeholder="Contoh: Ruang Rapat Lt 3 atau Google Meet"
                     className={inputClass}
                   />
+                </div>
+
+                {/* Checkbox Jadikan Draf Poin Rapat */}
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/60 space-y-3">
+                  <label className="flex items-center gap-2.5 cursor-pointer text-slate-800 dark:text-slate-200 font-bold text-xs">
+                    <input
+                      type="checkbox"
+                      checked={formData.is_meeting_draft === 'true'}
+                      onChange={(e) => setFormData({ ...formData, is_meeting_draft: e.target.checked ? 'true' : 'false' })}
+                      className="w-4 h-4 rounded text-accent focus:ring-accent border-slate-350 dark:border-slate-800 dark:bg-slate-950"
+                    />
+                    <span>Jadikan sebagai Draf Poin Rapat</span>
+                  </label>
+                  {formData.is_meeting_draft === 'true' && (
+                    <div className="p-3 rounded-xl bg-accent/5 border border-accent/10 text-[10px] text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
+                      💡 <strong>Bahasan Rapat</strong> akan otomatis mengambil <strong>Judul Catatan</strong> ini, dan <strong>Keputusan/Solusi</strong> akan mengambil seluruh isi <strong>Catatan</strong> ini saat diimpor di halaman Rapat.
+                    </div>
+                  )}
                 </div>
               </div>
  

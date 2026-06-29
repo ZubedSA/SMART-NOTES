@@ -95,6 +95,7 @@ export default function MeetingsPage() {
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'meetings' | 'actions'>('meetings');
+  const [draftNotes, setDraftNotes] = useState<any[]>([]);
 
   // Meeting Modal
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -152,20 +153,38 @@ export default function MeetingsPage() {
     if (!cachedMtg || !cachedTsk) setLoading(true);
 
     try {
-      const [mtgRes, tskRes] = await Promise.all([
+      const [mtgRes, tskRes, notesRes] = await Promise.all([
         api.get('/meeting'),
         api.get('/meeting-task'),
+        api.get('/notes').catch(() => null),
       ]);
       const fetchedMeetings = mtgRes?.data?.data?.items || [];
       const fetchedTasks = tskRes?.data?.data?.items || [];
+      
+      let fetchedNotes = [];
+      if (notesRes) {
+        fetchedNotes = notesRes.data?.data?.items || [];
+      } else {
+        const cachedNotes = typeof window !== 'undefined' ? localStorage.getItem('smart_notes_cache') : null;
+        if (cachedNotes) fetchedNotes = JSON.parse(cachedNotes);
+      }
+
+      console.log('fetchedNotes:', fetchedNotes);
+      const filteredDrafts = fetchedNotes.filter((n: any) => {
+        return n.is_meeting_draft === true || String(n.is_meeting_draft || '').toLowerCase().trim() === 'true';
+      });
+      console.log('filteredDrafts:', filteredDrafts);
+
       setMeetings(fetchedMeetings);
       setActionItems(fetchedTasks);
+      setDraftNotes(filteredDrafts);
       
       if (typeof window !== 'undefined') {
         localStorage.setItem('smart_meetings_cache', JSON.stringify(fetchedMeetings));
         localStorage.setItem('smart_action_items_cache', JSON.stringify(fetchedTasks));
       }
-    } catch {
+    } catch (err: any) {
+      console.error('Error fetching data:', err);
       if (!cachedMtg || !cachedTsk) {
         const fallbackMeetings = [
           { id: 'MTG-1', title: 'Rapat Sinkronisasi Project Smart Notes', date: '2026-06-28', time: '09:00', location: 'Ruang Rapat Utama & Zoom', moderator: 'Manager Rapat', notulen: 'Staff Lapangan', status: 'Berlangsung', agenda: 'Review progress minggu ini', discussion: 'Evaluasi desain mobile first', decision: 'Lanjutkan ke tahap pengerjaan fitur AI' },
@@ -1417,9 +1436,48 @@ export default function MeetingsPage() {
                 </div>
                 {/* Editor Pembahasan & Keputusan Poin-per-poin (Sinkron) */}
                 <div className="space-y-3 pt-2">
-                  <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase mb-2 pl-0.5">
-                    Pembahasan & Keputusan Rapat (Sinkron)
-                  </label>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase pl-0.5">
+                      Pembahasan & Keputusan Rapat (Sinkron)
+                    </label>
+                    <div className="relative">
+                      <select
+                        onChange={(e) => {
+                          const noteId = e.target.value;
+                          if (!noteId) return;
+                          const selectedNote = draftNotes.find(n => n.id === noteId);
+                          if (selectedNote) {
+                            const newPoint = {
+                              discussion: selectedNote.title || '',
+                              decision: selectedNote.content || '',
+                            };
+                            // Jika hanya ada satu poin kosong, timpa saja
+                            const cleanPoints = meetingPoints.filter(p => p.discussion.trim() !== '' || p.decision.trim() !== '');
+                            const mergedPoints = [...cleanPoints, newPoint];
+                            setMeetingPoints(mergedPoints);
+                            alert(`Berhasil mengimpor draf dari catatan "${selectedNote.title}"!`);
+                          }
+                          // Reset select value
+                          e.target.value = '';
+                        }}
+                        className="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 transition-all cursor-pointer outline-none focus:ring-1 focus:ring-accent"
+                        defaultValue=""
+                      >
+                        {draftNotes.length === 0 ? (
+                          <option value="" disabled>📥 Belum ada draf catatan rapat (Buat di Halaman Catatan)</option>
+                        ) : (
+                          <>
+                            <option value="" disabled>📥 Ambil Poin dari Draf Catatan...</option>
+                            {draftNotes.map(n => (
+                              <option key={n.id} value={n.id}>
+                                {n.title}
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
                   <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
                     {meetingPoints.map((pt, idx) => (
                       <div key={idx} className="p-4 rounded-2xl bg-slate-55/40 dark:bg-slate-900/10 border border-slate-200/40 dark:border-slate-800/40 relative group space-y-3">
