@@ -96,6 +96,16 @@ export class GoogleBridgeService {
       this.mockDb[sheet].push(newItem);
       return { success: true, data: newItem };
     }
+    if (action === 'update') {
+      if (this.mockDb[sheet]) {
+        const index = this.mockDb[sheet].findIndex(x => x.id === payload.id);
+        if (index !== -1) {
+          this.mockDb[sheet][index] = { ...this.mockDb[sheet][index], ...payload.data };
+          return { success: true, data: this.mockDb[sheet][index] };
+        }
+      }
+      return { success: true, data: payload.data };
+    }
     if (action === 'delete') {
       if (this.mockDb[sheet]) {
         this.mockDb[sheet] = this.mockDb[sheet].filter(x => x.id !== payload.id);

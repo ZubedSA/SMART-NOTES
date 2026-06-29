@@ -292,8 +292,10 @@ export default function MeetingsPage() {
         }
       }
       fetchData();
-    } catch {
-      alert('Gagal menyimpan rapat ke server. Data dikembalikan.');
+    } catch (error: any) {
+      console.error('Gagal menyimpan rapat:', error);
+      const detail = error.response?.data?.message || error.message || '';
+      alert(`Gagal menyimpan rapat ke server. Data dikembalikan.\nDetail: ${detail}`);
       setMeetings(previousMeetings);
       if (typeof window !== 'undefined') {
         localStorage.setItem('smart_meetings_cache', JSON.stringify(previousMeetings));
@@ -327,8 +329,10 @@ export default function MeetingsPage() {
     try {
       await api.delete(`/meeting/${id}`);
       fetchData();
-    } catch {
-      alert('Gagal menghapus rapat dari server. Data dikembalikan.');
+    } catch (error: any) {
+      console.error('Gagal menghapus rapat:', error);
+      const detail = error.response?.data?.message || error.message || '';
+      alert(`Gagal menghapus rapat dari server. Data dikembalikan.\nDetail: ${detail}`);
       setMeetings(previousMeetings);
       setActionItems(previousTasks);
       if (typeof window !== 'undefined') {
@@ -350,7 +354,8 @@ export default function MeetingsPage() {
     try {
       await api.put(`/meeting/${id}`, { status: newStatus });
       fetchData();
-    } catch {
+    } catch (error: any) {
+      console.error('Gagal memperbarui status rapat:', error);
       setMeetings(previousMeetings);
       if (typeof window !== 'undefined') {
         localStorage.setItem('smart_meetings_cache', JSON.stringify(previousMeetings));
@@ -422,8 +427,10 @@ export default function MeetingsPage() {
     try {
       await api.put(`/meeting/${notulenMeetingId}`, { ...serialized, status: 'Berlangsung' });
       fetchData();
-    } catch {
-      alert('Gagal menyimpan notulen ke server. Data dikembalikan.');
+    } catch (error: any) {
+      console.error('Gagal menyimpan notulen:', error);
+      const detail = error.response?.data?.message || error.message || '';
+      alert(`Gagal menyimpan notulen ke server. Data dikembalikan.\nDetail: ${detail}`);
       setMeetings(previousMeetings);
       if (typeof window !== 'undefined') {
         localStorage.setItem('smart_meetings_cache', JSON.stringify(previousMeetings));
@@ -787,8 +794,10 @@ export default function MeetingsPage() {
         }
       }
       fetchData();
-    } catch {
-      alert('Gagal menyimpan action item ke server. Data dikembalikan.');
+    } catch (error: any) {
+      console.error('Gagal menyimpan action item:', error);
+      const detail = error.response?.data?.message || error.message || '';
+      alert(`Gagal menyimpan action item ke server. Data dikembalikan.\nDetail: ${detail}`);
       setActionItems(previousTasks);
       if (typeof window !== 'undefined') {
         localStorage.setItem('smart_action_items_cache', JSON.stringify(previousTasks));
@@ -808,7 +817,8 @@ export default function MeetingsPage() {
     try {
       await api.put(`/meeting-task/${taskId}`, updates);
       fetchData();
-    } catch {
+    } catch (error: any) {
+      console.error('Gagal memperbarui action item cepat:', error);
       setActionItems(previousTasks);
       if (typeof window !== 'undefined') {
         localStorage.setItem('smart_action_items_cache', JSON.stringify(previousTasks));
