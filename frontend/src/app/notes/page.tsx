@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout/AppLayout';
 import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import {
   FileText,
   Search,
@@ -24,9 +26,12 @@ import {
   TrendingUp,
   AlertCircle,
   CheckSquare,
+  Calendar,
 } from 'lucide-react';
 
 export default function NotesPage() {
+  const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,6 +67,19 @@ export default function NotesPage() {
     title: '',
     message: '',
     onConfirm: () => {},
+  });
+
+  // Convert to Agenda Modal State
+  const [showAgendaModal, setShowAgendaModal] = useState(false);
+  const [agendaFormData, setAgendaFormData] = useState({
+    title: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    time: '09:00',
+    location: '',
+    type: 'agenda',
+    color: '#10b981',
+    linked_note_id: '',
   });
 
   const categories = [
@@ -108,6 +126,8 @@ export default function NotesPage() {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
     if (typeof window !== 'undefined') {
       const cached = localStorage.getItem('smart_notes_cache');
       if (cached) {
@@ -126,7 +146,7 @@ export default function NotesPage() {
       }
     }
     fetchNotes();
-  }, []);
+  }, [user, authLoading]);
 
   const handleOpenModal = (note?: any) => {
     if (note) {
@@ -154,6 +174,31 @@ export default function NotesPage() {
       });
     }
     setShowModal(true);
+  };
+
+  const handleOpenAgendaModal = (note: any) => {
+    setAgendaFormData({
+      title: note.title || '',
+      description: note.content || '',
+      date: note.date || new Date().toISOString().split('T')[0],
+      time: note.time || '09:00',
+      location: note.location || '',
+      type: 'agenda',
+      color: '#10b981',
+      linked_note_id: note.id || '',
+    });
+    setShowAgendaModal(true);
+  };
+
+  const handleSaveAgenda = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await api.post('/agenda', agendaFormData);
+      showToast('Agenda berhasil dibuat dari catatan!', 'success');
+      setShowAgendaModal(false);
+    } catch (err) {
+      showToast('Gagal membuat agenda. Silakan coba lagi.', 'error');
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -191,7 +236,7 @@ export default function NotesPage() {
       }
       fetchNotes();
     } catch (err) {
-      alert('Gagal menyimpan perubahan ke server. Data dikembalikan.');
+      showToast('Gagal menyimpan perubahan ke server. Data dikembalikan.', 'error');
       setNotes(previousNotes);
       if (typeof window !== 'undefined') {
         localStorage.setItem('smart_notes_cache', JSON.stringify(previousNotes));
@@ -221,7 +266,7 @@ export default function NotesPage() {
       await api.delete(`/notes/${id}`);
       fetchNotes();
     } catch (err) {
-      alert('Gagal menghapus catatan dari server. Data dikembalikan.');
+      showToast('Gagal menghapus catatan dari server. Data dikembalikan.', 'error');
       setNotes(previousNotes);
       if (typeof window !== 'undefined') {
         localStorage.setItem('smart_notes_cache', JSON.stringify(previousNotes));
@@ -466,6 +511,13 @@ export default function NotesPage() {
                         <CheckSquare className="w-4 h-4" />
                       </Link>
                       <button
+                        onClick={() => handleOpenAgendaModal(note)}
+                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-emerald-500 transition-all active:scale-[0.97]"
+                        title="Jadikan Agenda"
+                      >
+                        <Calendar className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleOpenModal(note)}
                         className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-blue-500 transition-all active:scale-[0.97]"
                         title="Edit"
@@ -641,6 +693,133 @@ export default function NotesPage() {
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold text-xs uppercase tracking-wider shadow-premium hover:shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-1.5"
                 >
                   Simpan Catatan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Jadikan Agenda */}
+      {showAgendaModal && (
+        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-md animate-fadeIn">
+          <div className="w-full max-w-lg bg-white/95 dark:bg-slate-950/90 border border-slate-200/50 dark:border-slate-800/40 shadow-luxury rounded-[2.5rem] backdrop-blur-2xl max-h-[90vh] flex flex-col overflow-hidden">
+            {/* Header - Fixed */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 p-6 shrink-0">
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2.5 tracking-tight">
+                <Calendar className="w-5 h-5 text-accent stroke-[2.5px]" />
+                Jadikan Agenda Baru
+              </h2>
+              <button onClick={() => setShowAgendaModal(false)} className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                <X className="w-5 h-5 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSaveAgenda} className="flex flex-col flex-1 overflow-hidden">
+              {/* Scrollable Body */}
+              <div className="p-6 space-y-5 overflow-y-auto flex-1 no-scrollbar pb-4">
+                <div>
+                  <label className={labelClass}>Judul Kegiatan / Nama Agenda *</label>
+                  <input
+                    type="text"
+                    required
+                    value={agendaFormData.title}
+                    onChange={(e) => setAgendaFormData({ ...agendaFormData, title: e.target.value })}
+                    placeholder="Contoh: Rapat Evaluasi Mingguan"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Tanggal Kegiatan</label>
+                    <input
+                      type="date"
+                      required
+                      value={agendaFormData.date}
+                      onChange={(e) => setAgendaFormData({ ...agendaFormData, date: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Waktu Mulai (WIB)</label>
+                    <input
+                      type="time"
+                      required
+                      value={agendaFormData.time}
+                      onChange={(e) => setAgendaFormData({ ...agendaFormData, time: e.target.value })}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Lokasi Pelaksanaan</label>
+                  <input
+                    type="text"
+                    value={agendaFormData.location}
+                    onChange={(e) => setAgendaFormData({ ...agendaFormData, location: e.target.value })}
+                    placeholder="Contoh: Ruang Rapat Lt 3, Zoom, dll"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Kategori Agenda</label>
+                    <select
+                      value={agendaFormData.type}
+                      onChange={(e) => setAgendaFormData({ ...agendaFormData, type: e.target.value })}
+                      className={inputClass}
+                    >
+                      <option value="agenda">📅 Kegiatan Umum</option>
+                      <option value="meeting">💼 Rapat Resmi</option>
+                      <option value="task">📝 Penugasan Staf</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Warna Identitas Kegiatan</label>
+                    <select
+                      value={agendaFormData.color}
+                      onChange={(e) => setAgendaFormData({ ...agendaFormData, color: e.target.value })}
+                      className="w-full px-3 py-2.5 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/30 text-slate-800 dark:text-slate-100 outline-none cursor-pointer"
+                    >
+                      <option value="#10b981">🟢 Emerald Mint (Umum)</option>
+                      <option value="#3b82f6">🔵 Royal Blue (Rapat)</option>
+                      <option value="#f59e0b">🟡 Amber Gold (Task)</option>
+                      <option value="#ef4444">🔴 Crimson Red (Urgensi)</option>
+                      <option value="#8b5cf6">🟣 Velvet Violet</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Deskripsi (Dari Catatan)</label>
+                  <textarea
+                    rows={4}
+                    value={agendaFormData.description}
+                    onChange={(e) => setAgendaFormData({ ...agendaFormData, description: e.target.value })}
+                    placeholder="Deskripsi kegiatan..."
+                    className="w-full p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-855 text-xs text-slate-800 dark:text-slate-100 outline-none leading-relaxed focus:border-accent focus:ring-2 focus:ring-accent/10 transition-all duration-200 resize-none font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-650"
+                  />
+                </div>
+              </div>
+
+              {/* Footer - Fixed */}
+              <div className="flex justify-end gap-2.5 p-6 border-t border-slate-100 dark:border-slate-800/40 bg-slate-55/20 dark:bg-slate-900/10 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowAgendaModal(false)}
+                  className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-450 hover:bg-slate-50 dark:hover:bg-slate-900 text-xs font-bold uppercase tracking-wider transition-all"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold text-xs uppercase tracking-wider shadow-premium hover:shadow-accent/20 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center gap-1.5"
+                >
+                  Simpan Agenda
                 </button>
               </div>
             </form>

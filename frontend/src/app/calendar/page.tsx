@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout/AppLayout';
 import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import {
   Calendar as CalIcon,
   ChevronLeft,
@@ -33,7 +34,98 @@ const MONTH_NAMES = [
   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
 ];
 
+const formatDateToYMD = (dateStr: string) => {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+  
+  // 1. Jika sudah YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+    return str;
+  }
+  
+  // 2. Jika format DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(str)) {
+    const parts = str.split('/');
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  }
+  
+  // 3. Jika format DD-MM-YYYY
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+    const parts = str.split('-');
+    const day = parts[0].padStart(2, '0');
+    const month = parts[1].padStart(2, '0');
+    const year = parts[2];
+    return `${year}-${month}-${day}`;
+  }
+
+  // 4. Jika format verbal seperti "29 Jun 2026" atau "29 Juni 2026"
+  const verbalMatch = str.match(/^(\d{1,2})\s+([a-zA-Z]+)\s+(\d{4})/);
+  if (verbalMatch) {
+    const day = verbalMatch[1].padStart(2, '0');
+    const monthStr = verbalMatch[2].toLowerCase();
+    const year = verbalMatch[3];
+    
+    const monthsMap: Record<string, string> = {
+      jan: '01', januari: '01',
+      feb: '02', februari: '02',
+      mar: '03', maret: '03',
+      apr: '04', april: '04',
+      mei: '05', may: '05',
+      jun: '06', juni: '06',
+      jul: '07', juli: '07',
+      agu: '08', agustus: '08', aug: '08',
+      sep: '09', september: '09',
+      okt: '10', oktober: '10', oct: '10',
+      nov: '11', november: '11',
+      des: '12', desember: '12', dec: '12'
+    };
+    
+    const month = monthsMap[monthStr];
+    if (month) {
+      return `${year}-${month}-${day}`;
+    }
+  }
+
+  // 5. Coba parse dengan Date biasa (untuk ISO string dsb)
+  try {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      if (str.includes('T')) {
+        return d.toISOString().split('T')[0];
+      } else {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    }
+  } catch (e) {}
+
+  return str;
+};
+
+const formatTimeToHM = (timeStr: string) => {
+  if (!timeStr) return '09:00';
+  try {
+    if (timeStr.includes('T')) {
+      const parts = timeStr.split('T')[1].split(':');
+      return `${parts[0]}:${parts[1]}`;
+    }
+    if (timeStr.includes(':')) {
+      const parts = timeStr.split(':');
+      return `${parts[0]}:${parts[1]}`;
+    }
+    return timeStr;
+  } catch {
+    return timeStr;
+  }
+};
+
 export default function CalendarPage() {
+  const { user, loading: authLoading } = useAuth();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-11
@@ -59,7 +151,13 @@ export default function CalendarPage() {
   });
 
   const fetchAllEvents = async () => {
-    setLoading(true);
+    const cachedAgendas = typeof window !== 'undefined' ? localStorage.getItem('smart_agenda_cache') : null;
+    const cachedMeetings = typeof window !== 'undefined' ? localStorage.getItem('smart_meetings_cache') : null;
+    const cachedTasks = typeof window !== 'undefined' ? localStorage.getItem('smart_kanban_tasks_cache') : null;
+
+    if (!cachedAgendas || !cachedMeetings || !cachedTasks) {
+      setLoading(true);
+    }
     try {
       // Ambil data rapat, tugas kanban, dan agenda khusus
       const [mtgRes, tskRes, agdRes] = await Promise.all([
@@ -70,15 +168,16 @@ export default function CalendarPage() {
 
       const meetings = mtgRes?.data?.data?.items || JSON.parse(localStorage.getItem('smart_meetings_cache') || '[]');
       const tasks = tskRes?.data?.data?.items || JSON.parse(localStorage.getItem('smart_kanban_tasks_cache') || '[]');
-      const agendas = agdRes?.data?.data || JSON.parse(localStorage.getItem('smart_agenda_cache') || '[]');
+      const agendasData = agdRes?.data?.data;
+      const agendas = Array.isArray(agendasData) ? agendasData : (agendasData?.items || JSON.parse(localStorage.getItem('smart_agenda_cache') || '[]'));
 
       // Satukan ke format kalender terpadu
       const formattedMeetings = meetings.map((m: any) => ({
         id: `meeting-${m.id}`,
         dbId: m.id,
         title: `[Rapat] ${m.title}`,
-        date: m.date,
-        time: m.time || '09:00',
+        date: formatDateToYMD(m.date),
+        time: formatTimeToHM(m.time),
         location: m.location || 'Zoom / Ruang Rapat',
         type: 'meeting',
         color: '#3b82f6', // Biru
@@ -88,7 +187,7 @@ export default function CalendarPage() {
         id: `task-${t.id}`,
         dbId: t.id,
         title: `[Tenggat Task] ${t.title} (PIC: ${t.pic})`,
-        date: t.deadline,
+        date: formatDateToYMD(t.deadline),
         time: '23:59',
         location: 'Papan Kanban',
         type: 'task',
@@ -99,8 +198,8 @@ export default function CalendarPage() {
         id: `agenda-${a.id}`,
         dbId: a.id,
         title: a.title,
-        date: a.date,
-        time: a.time || '09:00',
+        date: formatDateToYMD(a.date),
+        time: formatTimeToHM(a.time),
         location: a.location || 'Kantor',
         type: 'agenda',
         color: a.color || '#10b981', // Emerald
@@ -139,8 +238,84 @@ export default function CalendarPage() {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
+    if (typeof window !== 'undefined') {
+      const cachedAgendas = localStorage.getItem('smart_agenda_cache');
+      const cachedMeetings = localStorage.getItem('smart_meetings_cache');
+      const cachedTasks = localStorage.getItem('smart_kanban_tasks_cache');
+
+      if (cachedAgendas || cachedMeetings || cachedTasks) {
+        try {
+          const rawAgendas = cachedAgendas ? JSON.parse(cachedAgendas) : [];
+          const agendas = Array.isArray(rawAgendas) ? rawAgendas : (rawAgendas.items || []);
+          const meetings = cachedMeetings ? JSON.parse(cachedMeetings) : [];
+          const tasks = cachedTasks ? JSON.parse(cachedTasks) : [];
+
+          const formattedMeetings = meetings.map((m: any) => ({
+            id: `meeting-${m.id}`,
+            dbId: m.id,
+            title: `[Rapat] ${m.title}`,
+            date: formatDateToYMD(m.date),
+            time: formatTimeToHM(m.time),
+            location: m.location || 'Zoom / Ruang Rapat',
+            type: 'meeting',
+            color: '#3b82f6',
+          }));
+
+          const formattedTasks = tasks.map((t: any) => ({
+            id: `task-${t.id}`,
+            dbId: t.id,
+            title: `[Tenggat Task] ${t.title} (PIC: ${t.pic})`,
+            date: formatDateToYMD(t.deadline),
+            time: '23:59',
+            location: 'Papan Kanban',
+            type: 'task',
+            color: '#f59e0b',
+          }));
+
+          const formattedAgendas = agendas.map((a: any) => ({
+            id: `agenda-${a.id}`,
+            dbId: a.id,
+            title: a.title,
+            date: formatDateToYMD(a.date),
+            time: formatTimeToHM(a.time),
+            location: a.location || 'Kantor',
+            type: 'agenda',
+            color: a.color || '#10b981',
+          }));
+
+          setEvents([...formattedMeetings, ...formattedTasks, ...formattedAgendas]);
+          setLoading(false);
+        } catch (e) {}
+      }
+    }
+
     fetchAllEvents();
-  }, []);
+
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('new') === 'true') {
+        const titleParam = urlParams.get('title') || '';
+        const dateParam = urlParams.get('date') || new Date().toISOString().split('T')[0];
+        const timeParam = urlParams.get('time') || '09:00';
+        const locationParam = urlParams.get('location') || '';
+
+        setEditingEventId(null);
+        setAgendaForm({
+          title: titleParam,
+          date: dateParam.split('T')[0],
+          time: timeParam,
+          location: locationParam,
+          type: 'agenda',
+          color: '#10b981',
+        });
+        setShowModal(true);
+        // Bersihkan parameter dari URL agar tidak berulang saat di-refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
+  }, [user, authLoading]);
 
   // Calendar calculations
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AppLayout } from '@/components/layout/AppLayout';
 import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import {
   BarChart2,
   CheckCircle2,
@@ -16,38 +17,113 @@ import {
 } from 'lucide-react';
 
 export default function MonitoringPage() {
+  const { user, loading: authLoading } = useAuth();
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('Semua');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
+    if (typeof window !== 'undefined') {
+      const cachedMtg = localStorage.getItem('smart_meetings_cache');
+      const cachedTsk = localStorage.getItem('smart_action_items_cache');
+      const cachedSummary = localStorage.getItem('smart_monitoring_cache');
+
+      if (cachedMtg && cachedTsk) {
+        try {
+          const meetings = JSON.parse(cachedMtg);
+          const tasks = JSON.parse(cachedTsk);
+
+          const totalMeeting = meetings.length;
+          const totalAction = tasks.length;
+          const belum = tasks.filter((t: any) => t.status === 'Belum').length;
+          const selesai = tasks.filter((t: any) => t.status === 'Selesai').length;
+          const proses = tasks.filter((t: any) => t.status === 'Proses' || t.status === 'Sedang Dikerjakan').length;
+          const overdue = tasks.filter((t: any) => t.status === 'Overdue').length;
+          const progress = totalAction > 0 ? Math.round((selesai / totalAction) * 100) : 0;
+
+          setSummary({
+            totalMeeting,
+            totalAction,
+            progress,
+            statusBreakdown: { belum, selesai, proses, overdue },
+            allActionItems: tasks,
+          });
+          setLoading(false);
+        } catch (e) {}
+      } else if (cachedSummary) {
+        try {
+          setSummary(JSON.parse(cachedSummary));
+          setLoading(false);
+        } catch (e) {}
+      }
+    }
+
     const fetchMonitoring = async () => {
       try {
-        const res = await api.get('/meeting/monitoring/summary');
-        setSummary(res.data.data);
-      } catch (err) {
+        const [summaryRes, tasksRes] = await Promise.all([
+          api.get('/meeting/monitoring/summary'),
+          api.get('/meeting-task'),
+        ]);
+
+        const summaryData = summaryRes.data.data;
+        const allTasks = tasksRes.data?.data?.items || [];
+
         setSummary({
-          totalMeeting: 15,
-          totalAction: 42,
-          progress: 76,
-          statusBreakdown: {
-            belum: 6,
-            proses: 12,
-            selesai: 22,
-            overdue: 2,
-          },
-          recentActionItems: [
-            { id: 'ACT-1', title: 'Penyusunan Anggaran Belanja Pondok', pic: 'Bendahara', deadline: '2026-06-30', status: 'Proses', progress: 50 },
-            { id: 'ACT-2', title: 'Optimalisasi Server Aplikasi Smart Notes', pic: 'Tim IT', deadline: '2026-06-26', status: 'Overdue', progress: 80 },
-            { id: 'ACT-3', title: 'Distribusi Jadwal Piket Santri', pic: 'Koordinator Asrama', deadline: '2026-06-25', status: 'Selesai', progress: 100 },
-          ],
+          ...summaryData,
+          allActionItems: allTasks,
         });
+
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('smart_monitoring_cache', JSON.stringify(summaryData));
+          localStorage.setItem('smart_action_items_cache', JSON.stringify(allTasks));
+        }
+      } catch (err) {
+        const cachedMtg = typeof window !== 'undefined' ? localStorage.getItem('smart_meetings_cache') : null;
+        const cachedTsk = typeof window !== 'undefined' ? localStorage.getItem('smart_action_items_cache') : null;
+        
+        if (!cachedMtg || !cachedTsk) {
+          setSummary({
+            totalMeeting: 15,
+            totalAction: 42,
+            progress: 76,
+            statusBreakdown: {
+              belum: 6,
+              proses: 12,
+              selesai: 22,
+              overdue: 2,
+            },
+            allActionItems: [
+              { id: 'ACT-1', title: 'Penyusunan Anggaran Belanja Pondok', pic: 'Bendahara', deadline: '2026-06-30', status: 'Proses', progress: 50 },
+              { id: 'ACT-2', title: 'Optimalisasi Server Aplikasi Smart Notes', pic: 'Tim IT', deadline: '2026-06-26', status: 'Overdue', progress: 80 },
+              { id: 'ACT-3', title: 'Distribusi Jadwal Piket Santri', pic: 'Koordinator Asrama', deadline: '2026-06-25', status: 'Selesai', progress: 100 },
+            ],
+          });
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchMonitoring();
-  }, []);
+  }, [user, authLoading]);
+
+  // Filter & Search Action Items
+  const filteredActionItems = (summary?.allActionItems || []).filter((act: any) => {
+    const matchesStatus =
+      filterStatus === 'Semua' ||
+      (filterStatus === 'Belum' && act.status === 'Belum') ||
+      (filterStatus === 'Proses' && (act.status === 'Proses' || act.status === 'Sedang Dikerjakan')) ||
+      (filterStatus === 'Selesai' && act.status === 'Selesai') ||
+      (filterStatus === 'Overdue' && act.status === 'Overdue');
+
+    const matchesSearch =
+      act.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      act.pic?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesStatus && matchesSearch;
+  });
 
   if (loading || !summary) {
     return (
@@ -149,30 +225,50 @@ export default function MonitoringPage() {
 
       {/* Action Items List */}
       <div className="premium-card p-6 space-y-5">
-        <h3 className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">Daftar Pantauan Action Item Terbaru</h3>
-        <div className="space-y-3.5">
-          {summary.recentActionItems.map((act: any) => (
-            <div key={act.id} className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-250/20 dark:border-slate-800/40 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all">
-              <div>
-                <p className="font-extrabold text-sm text-slate-900 dark:text-white">{act.title}</p>
-                <p className="text-xs text-slate-500 mt-1 font-medium">PIC: <span className="font-bold text-accent">{act.pic}</span> • Deadline: {act.deadline}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-24 bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                    <div className="bg-accent h-full rounded-full" style={{ width: `${act.progress}%` }} />
-                  </div>
-                  <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{act.progress}%</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/40 pb-4">
+          <div>
+            <h3 className="font-extrabold text-base text-slate-900 dark:text-white tracking-tight">Daftar Pantauan Action Item</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Seluruh tindak lanjut keputusan rapat yang dipantau secara real-time</p>
+          </div>
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari tugas atau PIC..."
+              className="w-full pl-10 pr-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/30 text-slate-800 dark:text-slate-100 outline-none focus:border-accent focus:ring-2 focus:ring-accent/10"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-3.5 max-h-[50vh] overflow-y-auto pr-1 no-scrollbar">
+          {filteredActionItems.length === 0 ? (
+            <p className="text-xs text-slate-400 dark:text-slate-500 text-center py-8 font-bold">Tidak ada action item yang sesuai filter</p>
+          ) : (
+            filteredActionItems.map((act: any) => (
+              <div key={act.id} className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-250/20 dark:border-slate-800/40 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all">
+                <div>
+                  <p className="font-extrabold text-sm text-slate-900 dark:text-white">{act.title}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">PIC: <span className="font-bold text-accent">{act.pic}</span> • Deadline: {act.deadline}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase ${
-                  act.status === 'Overdue' ? 'bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse' :
-                  act.status === 'Selesai' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                }`}>
-                  {act.status}
-                </span>
+                <div className="flex items-center gap-4 justify-between md:justify-end">
+                  <div className="flex items-center gap-2">
+                    <div className="w-24 bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
+                      <div className="bg-accent h-full rounded-full" style={{ width: `${act.progress || (act.status === 'Selesai' ? 100 : 0)}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{act.progress || (act.status === 'Selesai' ? 100 : 0)}%</span>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-[9px] font-bold uppercase ${
+                    act.status === 'Overdue' ? 'bg-red-500/10 text-red-500 border border-red-500/20 animate-pulse' :
+                    act.status === 'Selesai' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
+                  }`}>
+                    {act.status}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </AppLayout>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import {
   Users,
   Plus,
@@ -91,6 +92,7 @@ const PRIORITY_OPTIONS = ['Low', 'Medium', 'High', 'Critical'];
 const TASK_STATUS_OPTIONS = ['Belum', 'Proses', 'Selesai'];
 
 export default function MeetingsPage() {
+  const { user, loading: authLoading } = useAuth();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,6 +210,8 @@ export default function MeetingsPage() {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
     if (typeof window !== 'undefined') {
       const cachedMtg = localStorage.getItem('smart_meetings_cache');
       const cachedTsk = localStorage.getItem('smart_action_items_cache');
@@ -228,7 +232,7 @@ export default function MeetingsPage() {
       }
     }
     fetchData();
-  }, []);
+  }, [user, authLoading]);
 
   // ===== MEETING CRUD =====
   const openCreateMeeting = () => {

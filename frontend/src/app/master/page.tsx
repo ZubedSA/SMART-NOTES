@@ -134,6 +134,8 @@ export default function MasterDataPage() {
   };
 
   useEffect(() => {
+    if (authLoading || !currentUser || !hasRole(['Admin'])) return;
+
     if (typeof window !== 'undefined') {
       const cachedCat = localStorage.getItem('smart_categories_cache');
       const cachedUsr = localStorage.getItem('smart_users_cache');
@@ -141,7 +143,7 @@ export default function MasterDataPage() {
       if (cachedUsr) setUsers(JSON.parse(cachedUsr));
     }
     fetchData();
-  }, [activeTab]);
+  }, [activeTab, currentUser, authLoading]);
 
   // CATEGORY OPERATIONS
   const openCreateCategory = () => {

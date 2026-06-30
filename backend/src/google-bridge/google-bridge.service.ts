@@ -21,7 +21,12 @@ export class GoogleBridgeService {
     }
     try {
       const response = await axios.get(this.gasUrl, {
-        params: { sheet, action: 'read', ...params },
+        params: { 
+          sheet, 
+          action: 'read', 
+          spreadsheet_id: process.env.GOOGLE_SPREADSHEET_ID || '',
+          ...params 
+        },
       });
       return response.data;
     } catch (error: any) {
@@ -42,7 +47,11 @@ export class GoogleBridgeService {
     }
     try {
       // Kita kirim via GET parameter agar terhindar dari isu 302 Redirect / 405 Method Not Allowed pada server Google Apps Script
-      const params: any = { action, ...payload };
+      const params: any = { 
+        action, 
+        spreadsheet_id: process.env.GOOGLE_SPREADSHEET_ID || '',
+        ...payload 
+      };
       if (payload.data && typeof payload.data === 'object') {
         params.data = JSON.stringify(payload.data);
       }

@@ -13,13 +13,16 @@
 
 const SCRIPT_PROP = PropertiesService.getScriptProperties();
 
+// ID Spreadsheet yang dinamis dikirim dari request
+let requestSpreadsheetId = "";
+
 // ============================================================================
 // KONFIGURASI ID SPREADSHEET & DRIVE FOLDER
 // ============================================================================
 // 1. Jika skrip ini dibuat dari menu Extensions > Apps Script di dalam Spreadsheet Anda, biarkan kosong ("").
 // 2. Jika skrip ini dibuat terpisah (Standalone di script.google.com), masukkan ID Spreadsheet Anda di bawah ini.
 //    Cara dapat ID Spreadsheet: Dari URL https://docs.google.com/spreadsheets/d/ID_SPREADSHEET_DI_SINI/edit
-const SPREADSHEET_ID = SCRIPT_PROP.getProperty("SPREADSHEET_ID") || "";
+const SPREADSHEET_ID = SCRIPT_PROP.getProperty("SPREADSHEET_ID") || "1eUY38apu4fDsz7-ohgTbIyKjNxojLhw7eYkfiKnoj7E";
 
 // ID Folder Google Drive untuk menyimpan lampiran rapat/file upload (kosongkan/"root" untuk folder utama)
 const DEFAULT_DRIVE_FOLDER_ID = SCRIPT_PROP.getProperty("DRIVE_FOLDER_ID") || "root";
@@ -29,12 +32,15 @@ const DEFAULT_DRIVE_FOLDER_ID = SCRIPT_PROP.getProperty("DRIVE_FOLDER_ID") || "r
  * Helper mendapatkan objek Spreadsheet yang aktif atau berdasarkan ID
  */
 function getSpreadsheet() {
+  if (requestSpreadsheetId && requestSpreadsheetId.trim() !== "") {
+    return SpreadsheetApp.openById(requestSpreadsheetId.trim());
+  }
   if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
     return SpreadsheetApp.openById(SPREADSHEET_ID.trim());
   }
   const activeSs = SpreadsheetApp.getActiveSpreadsheet();
   if (!activeSs) {
-    throw new Error("Skrip tidak terhubung ke Spreadsheet. Silakan isi variabel SPREADSHEET_ID di baris 20 Code.gs!");
+    throw new Error("Skrip tidak terhubung ke Spreadsheet. Silakan isi variabel SPREADSHEET_ID di baris 22 Code.gs atau kirim parameter spreadsheet_id!");
   }
   return activeSs;
 }
@@ -45,6 +51,7 @@ function getSpreadsheet() {
 function doGet(e) {
   try {
     const params = e.parameter || {};
+    requestSpreadsheetId = params.spreadsheet_id || params.spreadsheetId || "";
     const action = params.action || "read";
     const sheetName = params.sheet;
 
@@ -109,6 +116,7 @@ function doPost(e) {
     } else if (e.parameter) {
       payload = e.parameter;
     }
+    requestSpreadsheetId = payload.spreadsheet_id || payload.spreadsheetId || (e.parameter && (e.parameter.spreadsheet_id || e.parameter.spreadsheetId)) || "";
 
     const action = payload.action;
     const sheetName = payload.sheet;

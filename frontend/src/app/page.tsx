@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import {
   FileText,
   Users,
@@ -19,10 +20,24 @@ import {
 import Link from 'next/link';
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading || !user) return;
+
+    // Load from cache first for instant display
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('smart_dashboard_cache');
+      if (cached) {
+        try {
+          setData(JSON.parse(cached));
+          setLoading(false);
+        } catch (e) {}
+      }
+    }
+
     const fetchDashboard = async () => {
       try {
         const res = await api.get('/dashboard');
@@ -125,7 +140,7 @@ export default function DashboardPage() {
       }
     };
     fetchDashboard();
-  }, []);
+  }, [user, authLoading]);
 
   if (loading || !data) {
     return (

@@ -3,6 +3,8 @@ import './globals.css';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { QueryProvider } from '@/context/QueryProvider';
+import { ToastProvider } from '@/context/ToastContext';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: 'Smart Notes Management System - Enterprise PWA',
@@ -31,30 +33,30 @@ export default function RootLayout({
         <QueryProvider>
           <ThemeProvider>
             <AuthProvider>
-              {children}
+              <ToastProvider>
+                {children}
+              </ToastProvider>
             </AuthProvider>
           </ThemeProvider>
         </QueryProvider>
         
         {/* Service Worker Registration for PWA */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js').then(
-                    function(registration) {
-                      console.log('PWA Service Worker registered on scope:', registration.scope);
-                    },
-                    function(err) {
-                      console.error('PWA Service Worker registration failed:', err);
-                    }
-                  );
-                });
-              }
-            `,
-          }}
-        />
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if ('serviceWorker' in navigator) {
+              window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(
+                  function(registration) {
+                    console.log('PWA Service Worker registered on scope:', registration.scope);
+                  },
+                  function(err) {
+                    console.error('PWA Service Worker registration failed:', err);
+                  }
+                );
+              });
+            }
+          `}
+        </Script>
       </body>
     </html>
   );

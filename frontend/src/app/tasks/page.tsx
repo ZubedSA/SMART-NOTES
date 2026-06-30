@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AppLayout } from '@/components/layout/AppLayout';
 import api from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 import {
   CheckSquare,
   Plus,
@@ -33,6 +34,7 @@ const INITIAL_FORM = {
 };
 
 function TasksContent() {
+  const { user, loading: authLoading } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
@@ -65,6 +67,7 @@ function TasksContent() {
 
   // Listen to searchParams to convert Note to Task
   useEffect(() => {
+    if (authLoading || !user) return;
     if (searchParams && searchParams.get('new') === 'true') {
       const title = searchParams.get('title') || '';
       const category = searchParams.get('category') || '';
@@ -81,7 +84,7 @@ function TasksContent() {
         window.history.replaceState({ path: newUrl }, '', newUrl);
       }
     }
-  }, [searchParams]);
+  }, [searchParams, user, authLoading]);
 
   const fetchTasks = async () => {
     const cachedTasks = typeof window !== 'undefined' ? localStorage.getItem('smart_kanban_tasks_cache') : null;
@@ -156,8 +159,9 @@ function TasksContent() {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
     fetchTasks();
-  }, []);
+  }, [user, authLoading]);
 
   const openCreateTask = () => {
     setEditingTaskId(null);
