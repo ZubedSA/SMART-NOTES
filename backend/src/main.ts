@@ -23,15 +23,26 @@ async function bootstrap() {
   const path = require('path');
   server.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+  // Middleware CORS & Preflight OPTIONS tingkat Express
+  server.use((req: any, res: any, next: any) => {
+    const origin = req.headers.origin;
+    if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+    
+    if (req.method === 'OPTIONS') {
+      res.status(200).end();
+      return;
+    }
+    next();
+  });
+
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   
   app.useGlobalFilters(new AllExceptionsFilter());
-
-  app.enableCors({
-    origin: '*',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
 
   app.useGlobalPipes(
     new ValidationPipe({

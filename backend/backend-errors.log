@@ -1,1 +1,18 @@
 # Backend Errors Log (Cleared for production migration to Neon Postgres)
+[2026-07-02T19:49:15.775Z] Exception on GET /dashboard
+  Status: 401
+  Token: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJVU1ItMSIsImVtYWlsIjoiYWRtaW5Ac21hcnQuaWQiLCJuYW1lIjoiQWRtaW5pc3RyYXRvciIsInJvbGVJZCI6IlJPTEUtMSIsInJvbGVOYW1lIjoiQWRtaW4iLCJpYXQiOjE3ODI3MjU4OTksImV4cCI6MTc4MjgxMjI5OX0.NEW-hVcVewg_45T8-7ropOIF62nhBqxkerrZDbhaFow
+  Body: {}
+  Response: {"message":"Unauthorized","statusCode":401}
+  Stack: UnauthorizedException: Unauthorized
+    at 74fdd97504317a1670e24.handleRequest (D:\WEB\SMART-NOTES\backend\node_modules\@nestjs\passport\dist\auth.guard.js:60:30)
+    at D:\WEB\SMART-NOTES\backend\node_modules\@nestjs\passport\dist\auth.guard.js:44:124
+    at D:\WEB\SMART-NOTES\backend\node_modules\@nestjs\passport\dist\auth.guard.js:83:24
+    at allFailed (D:\WEB\SMART-NOTES\backend\node_modules\passport\lib\middleware\authenticate.js:110:18)
+    at attempt (D:\WEB\SMART-NOTES\backend\node_modules\passport\lib\middleware\authenticate.js:183:28)
+    at JwtStrategy.strategy.fail (D:\WEB\SMART-NOTES\backend\node_modules\passport\lib\middleware\authenticate.js:314:9)
+    at D:\WEB\SMART-NOTES\backend\node_modules\passport-jwt\lib\strategy.js:106:33
+    at D:\WEB\SMART-NOTES\backend\node_modules\jsonwebtoken\verify.js:190:16
+    at getSecret (D:\WEB\SMART-NOTES\backend\node_modules\jsonwebtoken\verify.js:97:14)
+    at Object.module.exports [as verify] (D:\WEB\SMART-NOTES\backend\node_modules\jsonwebtoken\verify.js:101:10)
+
