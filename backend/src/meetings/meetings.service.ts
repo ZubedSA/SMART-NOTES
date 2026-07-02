@@ -1,83 +1,158 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { GoogleBridgeService } from '../google-bridge/google-bridge.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class MeetingsService {
-  constructor(private readonly bridge: GoogleBridgeService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // --- MEETINGS ---
   async findAllMeetings(query: any) {
-    const res = await this.bridge.get('Meetings', query);
-    return res.data;
+    const items = await this.prisma.meeting.findMany();
+    return { items, total: items.length };
   }
 
   async findOneMeeting(id: string) {
-    const res = await this.bridge.get('Meetings');
-    const item = (res.data?.items || []).find((x: any) => x.id === id);
+    const item = await this.prisma.meeting.findUnique({
+      where: { id },
+    });
     if (!item) throw new NotFoundException('Meeting tidak ditemukan');
     return item;
   }
 
   async createMeeting(data: any) {
-    const payload = { ...data, status: data.status || 'Draft' };
-    const res = await this.bridge.post('insert', { sheet: 'Meetings', data: payload });
-    return res.data;
+    const payload = {
+      title: data.title || '',
+      date: data.date || '',
+      time: data.time || '',
+      location: data.location || '',
+      moderator: data.moderator || '',
+      notulen: data.notulen || '',
+      status: data.status || 'Draft',
+      discussion: data.discussion || '',
+      decision: data.decision || '',
+    };
+    return this.prisma.meeting.create({
+      data: payload,
+    });
   }
 
   async updateMeeting(id: string, data: any) {
-    const res = await this.bridge.post('update', { sheet: 'Meetings', id, data });
-    return res.data;
+    const payload: any = {};
+    if (data.title !== undefined) payload.title = data.title;
+    if (data.date !== undefined) payload.date = data.date;
+    if (data.time !== undefined) payload.time = data.time;
+    if (data.location !== undefined) payload.location = data.location;
+    if (data.moderator !== undefined) payload.moderator = data.moderator;
+    if (data.notulen !== undefined) payload.notulen = data.notulen;
+    if (data.status !== undefined) payload.status = data.status;
+    if (data.discussion !== undefined) payload.discussion = data.discussion;
+    if (data.decision !== undefined) payload.decision = data.decision;
+
+    return this.prisma.meeting.update({
+      where: { id },
+      data: payload,
+    });
   }
 
   async removeMeeting(id: string) {
-    return this.bridge.post('delete', { sheet: 'Meetings', id });
+    // Hapus tugas tindak lanjut terkait terlebih dahulu
+    await this.prisma.meetingTask.deleteMany({
+      where: { meeting_id: id },
+    });
+
+    return this.prisma.meeting.delete({
+      where: { id },
+    });
   }
 
   // --- MEMBERS ---
   async findMembersByMeeting(meetingId: string) {
-    const res = await this.bridge.get('MeetingMembers', { filterKey: 'meeting_id', filterValue: meetingId });
-    return res.data;
+    const items = await this.prisma.meetingMember.findMany({
+      where: { meeting_id: meetingId },
+    });
+    return { items, total: items.length };
   }
 
   async addMember(data: any) {
-    const res = await this.bridge.post('insert', { sheet: 'MeetingMembers', data });
-    return res.data;
+    return this.prisma.meetingMember.create({
+      data: {
+        meeting_id: data.meeting_id,
+        user_id: data.user_id,
+        role: data.role || 'Member',
+        status: data.status || 'Hadir',
+      },
+    });
   }
 
   async updateMember(id: string, data: any) {
-    const res = await this.bridge.post('update', { sheet: 'MeetingMembers', id, data });
-    return res.data;
+    const payload: any = {};
+    if (data.role !== undefined) payload.role = data.role;
+    if (data.status !== undefined) payload.status = data.status;
+
+    return this.prisma.meetingMember.update({
+      where: { id },
+      data: payload,
+    });
   }
 
   // --- ACTION ITEMS (MEETING TASKS) ---
   async findAllMeetingTasks(query: any) {
-    const res = await this.bridge.get('MeetingTasks', query);
-    return res.data;
+    const where: any = {};
+    if (query?.meeting_id) {
+      where.meeting_id = query.meeting_id;
+    }
+    const items = await this.prisma.meetingTask.findMany({ where });
+    return { items, total: items.length };
   }
 
   async createMeetingTask(data: any) {
-    const payload = { ...data, status: data.status || 'Belum', progress: data.progress || 0 };
-    const res = await this.bridge.post('insert', { sheet: 'MeetingTasks', data: payload });
-    return res.data;
+    const progressVal = data.progress !== undefined ? parseInt(data.progress.toString(), 10) : 0;
+    const payload = {
+      meeting_id: data.meeting_id,
+      title: data.title || '',
+      description: data.description || '',
+      pic: data.pic || '',
+      deadline: data.deadline || '',
+      priority: data.priority || 'Medium',
+      status: data.status || 'Belum',
+      progress: isNaN(progressVal) ? 0 : progressVal,
+    };
+    return this.prisma.meetingTask.create({
+      data: payload,
+    });
   }
 
   async updateMeetingTask(id: string, data: any) {
-    const res = await this.bridge.post('update', { sheet: 'MeetingTasks', id, data });
-    return res.data;
+    const payload: any = {};
+    if (data.title !== undefined) payload.title = data.title;
+    if (data.description !== undefined) payload.description = data.description;
+    if (data.pic !== undefined) payload.pic = data.pic;
+    if (data.deadline !== undefined) payload.deadline = data.deadline;
+    if (data.priority !== undefined) payload.priority = data.priority;
+    if (data.status !== undefined) payload.status = data.status;
+    if (data.progress !== undefined) {
+      const progressVal = parseInt(data.progress.toString(), 10);
+      payload.progress = isNaN(progressVal) ? 0 : progressVal;
+    }
+
+    return this.prisma.meetingTask.update({
+      where: { id },
+      data: payload,
+    });
   }
 
   async removeMeetingTask(id: string) {
-    return this.bridge.post('delete', { sheet: 'MeetingTasks', id });
+    return this.prisma.meetingTask.delete({
+      where: { id },
+    });
   }
 
   // --- MONITORING RAPAT DASHBOARD ---
   async getMonitoringSummary() {
-    const [mtgRes, taskRes] = await Promise.all([
-      this.bridge.get('Meetings'),
-      this.bridge.get('MeetingTasks'),
+    const [meetings, tasks] = await Promise.all([
+      this.prisma.meeting.findMany(),
+      this.prisma.meetingTask.findMany(),
     ]);
-    const meetings = mtgRes.data?.items || [];
-    const tasks = taskRes.data?.items || [];
 
     const totalMeeting = meetings.length;
     const totalAction = tasks.length;

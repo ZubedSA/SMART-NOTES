@@ -18,6 +18,11 @@ let isInitialized = false;
 
 async function bootstrap() {
   if (isInitialized) return;
+  
+  // Sajikan static folder untuk unggahan media lokal
+  const path = require('path');
+  server.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   
   app.useGlobalFilters(new AllExceptionsFilter());

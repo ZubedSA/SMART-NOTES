@@ -1,0 +1,146 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  role      String   @default("Viewer") // "Admin", "Manager", "Staff", "Viewer"
+  phone     String?
+  password  String   @default("password123")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String
+
+  @@map("categories")
+}
+
+model Label {
+  id    String @id @default(cuid())
+  name  String @unique
+  color String
+
+  @@map("labels")
+}
+
+model Note {
+  id              String   @id @default(cuid())
+  title           String
+  category        String
+  content         String
+  date            String?
+  time            String?
+  priority        String   @default("Medium")
+  status          String   @default("Published")
+  is_favorite     Boolean  @default(false)
+  is_archived     Boolean  @default(false)
+  created_by      String
+  is_meeting_draft Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("notes")
+}
+
+model Meeting {
+  id          String   @id @default(cuid())
+  title       String
+  date        String
+  time        String
+  location    String?
+  moderator   String?
+  notulen     String?
+  status      String   @default("Draft")
+  discussion  String?
+  decision    String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("meetings")
+}
+
+model MeetingTask {
+  id          String   @id @default(cuid())
+  meeting_id  String
+  title       String
+  description String?
+  pic         String
+  deadline    String?
+  priority    String   @default("Medium")
+  status      String   @default("Belum")
+  progress    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("meeting_tasks")
+}
+
+model MeetingMember {
+  id         String  @id @default(cuid())
+  meeting_id String
+  user_id    String
+  role       String?
+  status     String?
+
+  @@map("meeting_members")
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  title     String
+  category  String?
+  pic       String
+  deadline  String?
+  priority  String   @default("Medium")
+  status    String   @default("Belum")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tasks")
+}
+
+model Agenda {
+  id        String   @id @default(cuid())
+  title     String
+  date      String
+  time      String
+  location  String?
+  category  String?
+  status    String   @default("Terjadwal")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("agenda")
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  user_id   String
+  action    String
+  ip        String?
+  device    String?
+  timestamp DateTime @default(now())
+
+  @@map("logs")
+}
+
+model Setting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+
+  @@map("settings")
+}

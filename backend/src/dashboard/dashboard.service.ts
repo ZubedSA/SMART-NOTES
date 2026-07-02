@@ -1,22 +1,17 @@
 import { Injectable } from '@nestjs/common';
-import { GoogleBridgeService } from '../google-bridge/google-bridge.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class DashboardService {
-  constructor(private readonly bridge: GoogleBridgeService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getDashboardSummary() {
-    const [notesRes, mtgRes, taskRes, agdRes] = await Promise.all([
-      this.bridge.get('Notes'),
-      this.bridge.get('Meetings'),
-      this.bridge.get('MeetingTasks'),
-      this.bridge.get('Agenda'),
+    const [notes, meetings, tasks, agenda] = await Promise.all([
+      this.prisma.note.findMany(),
+      this.prisma.meeting.findMany(),
+      this.prisma.meetingTask.findMany(),
+      this.prisma.agenda.findMany(),
     ]);
-
-    const notes = notesRes.data?.items || [];
-    const meetings = mtgRes.data?.items || [];
-    const tasks = taskRes.data?.items || [];
-    const agenda = agdRes.data?.items || [];
 
     const totalNotes = notes.length;
     const totalMeetings = meetings.length;

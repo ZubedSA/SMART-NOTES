@@ -1,71 +1,97 @@
-import { Injectable } from '@nestjs/common';
-import { GoogleBridgeService } from '../google-bridge/google-bridge.service';
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class CommonFeaturesService {
-  constructor(private readonly bridge: GoogleBridgeService) {}
+  private readonly logger = new Logger(CommonFeaturesService.name);
 
-  // --- CATEGORIES & LABELS ---
+  constructor(private readonly prisma: PrismaService) {}
+
+  // --- CATEGORIES ---
   async getCategories() {
-    const res = await this.bridge.get('Categories');
-    const items = res.data?.items || [];
-    if (items.length === 0) {
-      return [
-        { id: 'CAT-1', name: 'Catatan Pribadi', color: '#10B981' },
-        { id: 'CAT-2', name: 'Catatan Meeting', color: '#3B82F6' },
-        { id: 'CAT-3', name: 'Catatan Agenda', color: '#F59E0B' },
-        { id: 'CAT-4', name: 'Catatan Organisasi', color: '#8B5CF6' },
-        { id: 'CAT-5', name: 'Catatan Pondok', color: '#14532D' },
-        { id: 'CAT-6', name: 'Catatan Hafalan', color: '#EC4899' },
-        { id: 'CAT-7', name: 'Catatan Project', color: '#06B6D4' },
-      ];
-    }
-    return items;
+    return this.prisma.category.findMany();
   }
 
   async createCategory(data: any) {
-    const res = await this.bridge.post('insert', { sheet: 'Categories', data });
-    return res.data;
+    return this.prisma.category.create({
+      data: {
+        name: data.name,
+        color: data.color,
+      },
+    });
   }
 
   async updateCategory(id: string, data: any) {
-    const res = await this.bridge.post('update', { sheet: 'Categories', id, data });
-    return res.data;
+    return this.prisma.category.update({
+      where: { id },
+      data: {
+        name: data.name,
+        color: data.color,
+      },
+    });
   }
 
   async deleteCategory(id: string) {
-    const res = await this.bridge.post('delete', { sheet: 'Categories', id });
-    return res;
+    return this.prisma.category.delete({
+      where: { id },
+    });
   }
 
+  // --- LABELS ---
   async getLabels() {
-    const res = await this.bridge.get('Labels');
-    return res.data?.items || [
-      { id: 'LBL-1', name: 'Urgent', color: '#EF4444' },
-      { id: 'LBL-2', name: 'Penting', color: '#F59E0B' },
-      { id: 'LBL-3', name: 'Ide', color: '#10B981' },
-    ];
+    return this.prisma.label.findMany();
   }
 
   // --- USERS ---
   async getUsers() {
-    const res = await this.bridge.get('Users');
-    return res.data?.items || [];
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        phone: true,
+        createdAt: true,
+      },
+    });
   }
 
   async createUser(data: any) {
-    const res = await this.bridge.post('insert', { sheet: 'Users', data });
-    return res.data;
+    // Hash password default atau password input menggunakan bcrypt
+    const rawPassword = data.password || 'password123';
+    const hashedPassword = await bcrypt.hash(rawPassword, 10);
+    return this.prisma.user.create({
+      data: {
+        email: data.email.toLowerCase(),
+        name: data.name,
+        role: data.role || 'Viewer',
+        phone: data.phone || '',
+        password: hashedPassword,
+      },
+    });
   }
 
   async updateUser(id: string, data: any) {
-    const res = await this.bridge.post('update', { sheet: 'Users', id, data });
-    return res.data;
+    const payload: any = { ...data };
+    if (payload.password) {
+      payload.password = await bcrypt.hash(payload.password, 10);
+    }
+    if (payload.email) {
+      payload.email = payload.email.toLowerCase();
+    }
+    return this.prisma.user.update({
+      where: { id },
+      data: payload,
+    });
   }
 
   async deleteUser(id: string) {
-    const res = await this.bridge.post('delete', { sheet: 'Users', id });
-    return res;
+    return this.prisma.user.delete({
+      where: { id },
+    });
   }
 
   // --- REALTIME SEARCH ---
@@ -73,66 +99,96 @@ export class CommonFeaturesService {
     if (!query) return { notes: [], meetings: [], tasks: [], agenda: [] };
     const q = query.toLowerCase();
 
-    const [notesRes, mtgRes, taskRes, agdRes] = await Promise.all([
-      this.bridge.get('Notes'),
-      this.bridge.get('Meetings'),
-      this.bridge.get('Tasks'),
-      this.bridge.get('Agenda'),
+    const [notes, meetings, tasks, agenda] = await Promise.all([
+      this.prisma.note.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { content: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+      }),
+      this.prisma.meeting.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { discussion: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+      }),
+      this.prisma.task.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { pic: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+      }),
+      this.prisma.agenda.findMany({
+        where: {
+          OR: [
+            { title: { contains: q, mode: 'insensitive' } },
+            { location: { contains: q, mode: 'insensitive' } },
+          ],
+        },
+      }),
     ]);
-
-    const notes = (notesRes.data?.items || []).filter((x: any) =>
-      String(x.title || '').toLowerCase().includes(q) || String(x.content || '').toLowerCase().includes(q)
-    );
-    const meetings = (mtgRes.data?.items || []).filter((x: any) =>
-      String(x.title || '').toLowerCase().includes(q) || String(x.discussion || '').toLowerCase().includes(q)
-    );
-    const tasks = (taskRes.data?.items || []).filter((x: any) =>
-      String(x.title || '').toLowerCase().includes(q) || String(x.pic || '').toLowerCase().includes(q)
-    );
-    const agenda = (agdRes.data?.items || []).filter((x: any) =>
-      String(x.title || '').toLowerCase().includes(q) || String(x.description || '').toLowerCase().includes(q)
-    );
 
     return { notes, meetings, tasks, agenda };
   }
 
-  // --- UPLOAD TO DRIVE VIA GAS ---
+  // --- UPLOAD TO LOCAL STORAGE ---
   async uploadFile(base64Data: string, fileName: string, mimeType: string) {
-    const res = await this.bridge.post('upload', { base64Data, fileName, mimeType });
-    return res.data || { url: 'https://drive.google.com/mock-file-url', fileName };
+    try {
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      const base64Clean = base64Data.replace(/^data:.*;base64,/, '');
+      const buffer = Buffer.from(base64Clean, 'base64');
+      const uniqueFileName = `${Date.now()}-${fileName.replace(/\s+/g, '_')}`;
+      const filePath = path.join(uploadDir, uniqueFileName);
+
+      fs.writeFileSync(filePath, buffer);
+
+      const port = process.env.PORT || 3001;
+      return {
+        url: `http://localhost:${port}/uploads/${uniqueFileName}`,
+        fileName: uniqueFileName,
+      };
+    } catch (e: any) {
+      this.logger.error(`Gagal upload file secara lokal: ${e.message}`);
+      return { url: 'https://drive.google.com/mock-file-url', fileName };
+    }
   }
 
   // --- REPORTS ---
   async getReportsSummary() {
-    const [notesRes, mtgRes, taskRes] = await Promise.all([
-      this.bridge.get('Notes'),
-      this.bridge.get('Meetings'),
-      this.bridge.get('Tasks'),
+    const [notesCount, meetingsCount, tasksCount] = await Promise.all([
+      this.prisma.note.count(),
+      this.prisma.meeting.count(),
+      this.prisma.task.count(),
     ]);
 
     return {
-      notesCount: (notesRes.data?.items || []).length,
-      meetingsCount: (mtgRes.data?.items || []).length,
-      tasksCount: (taskRes.data?.items || []).length,
+      notesCount,
+      meetingsCount,
+      tasksCount,
       generatedAt: new Date().toISOString(),
     };
   }
 
   // --- LOGS ---
   async getLogs() {
-    const res = await this.bridge.get('Logs');
-    return res.data?.items || [
-      { id: 'LOG-1', user_id: 'USR-1', action: 'Login ke sistem', timestamp: new Date().toISOString(), ip: '127.0.0.1', device: 'Desktop Chrome' },
-    ];
+    return this.prisma.log.findMany({
+      orderBy: { timestamp: 'desc' },
+      take: 100,
+    });
   }
 
   // --- SETTINGS ---
   async getSettings() {
-    const res = await this.bridge.get('Settings');
-    return res.data?.items || [
-      { key: 'app_name', value: 'Smart Notes Management System' },
-      { key: 'primary_color', value: '#14532D' },
-      { key: 'accent_color', value: '#16A34A' },
-    ];
+    return this.prisma.setting.findMany();
   }
 }

@@ -1,91 +1,122 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { GoogleBridgeService } from '../google-bridge/google-bridge.service';
-import fs = require('fs');
-import path = require('path');
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class NotesService {
-  constructor(private readonly bridge: GoogleBridgeService) {}
+  constructor(private readonly prisma: PrismaService) {}
+
+  private parseBool(val: any): boolean {
+    if (val === undefined || val === null) return false;
+    return val === true || val === 'true';
+  }
 
   async findAll(query: any, userId?: string, roleName?: string) {
-    const res = await this.bridge.get('Notes', query);
-    let notes = res.data?.items || [];
+    let notes: any[] = [];
 
     // Filter catatan: Setiap pengguna hanya bisa melihat catatan miliknya sendiri
     // KECUALI jika untuk kebutuhan mengambil draf catatan rapat (query.meetingDrafts === 'true')
     if (query?.meetingDrafts === 'true') {
-      notes = notes.filter((note: any) => note.is_meeting_draft === 'true' || note.is_meeting_draft === true);
+      notes = await this.prisma.note.findMany({
+        where: {
+          is_meeting_draft: true,
+        },
+      });
     } else if (userId) {
-      notes = notes.filter((note: any) => note.created_by === userId);
+      notes = await this.prisma.note.findMany({
+        where: {
+          created_by: userId,
+        },
+      });
+    } else {
+      notes = await this.prisma.note.findMany();
     }
 
-    let users: any[] = [];
-    try {
-      const usersRes = await this.bridge.get('Users');
-      users = usersRes.data?.items || [];
-    } catch (e) {
-      // ignore
-    }
-    const notesWithUser = notes.map((note: any) => {
-      const creator = users.find((u: any) => u.id === note.created_by);
+    const users = await this.prisma.user.findMany({
+      select: { id: true, name: true },
+    });
+
+    const notesWithUser = notes.map((note) => {
+      const creator = users.find((u) => u.id === note.created_by);
       return {
         ...note,
-        created_by_name: creator ? creator.name : (note.created_by === 'USR-3' ? 'Staff Lapangan' : (note.created_by === 'USR-2' ? 'Manager Rapat' : 'Administrator')),
+        created_by_name: creator ? creator.name : 'Administrator',
       };
     });
-    return { ...res.data, items: notesWithUser };
+
+    return { items: notesWithUser, total: notesWithUser.length };
   }
 
   async findOne(id: string, userId?: string, roleName?: string) {
-    const res = await this.bridge.get('Notes');
-    const items = res.data?.items || [];
-    const item = items.find((x: any) => x.id === id);
+    const item = await this.prisma.note.findUnique({
+      where: { id },
+    });
+
     if (!item) throw new NotFoundException('Catatan tidak ditemukan');
-    
+
     // Cegah akses jika bukan pemilik (berlaku untuk semua pengguna)
     if (userId && item.created_by !== userId) {
       throw new NotFoundException('Catatan tidak ditemukan');
     }
 
-    let users: any[] = [];
-    try {
-      const usersRes = await this.bridge.get('Users');
-      users = usersRes.data?.items || [];
-    } catch (e) {
-      // ignore
-    }
-    const creator = users.find((u: any) => u.id === item.created_by);
+    const creator = await this.prisma.user.findUnique({
+      where: { id: item.created_by },
+      select: { name: true },
+    });
+
     return {
       ...item,
-      created_by_name: creator ? creator.name : (item.created_by === 'USR-3' ? 'Staff Lapangan' : (item.created_by === 'USR-2' ? 'Manager Rapat' : 'Administrator')),
+      created_by_name: creator ? creator.name : 'Administrator',
     };
   }
 
   async create(data: any, userId: string) {
     const payload = {
-      ...data,
-      status: data.status || 'Published',
+      title: data.title || '',
+      category: data.category || 'Catatan Pribadi',
+      content: data.content || '',
+      date: data.date || new Date().toISOString().split('T')[0],
+      time: data.time || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       priority: data.priority || 'Medium',
-      visibility: data.visibility || 'Private',
-      is_favorite: data.is_favorite || 'false',
-      is_archived: data.is_archived || 'false',
+      status: data.status || 'Published',
+      is_favorite: this.parseBool(data.is_favorite),
+      is_archived: this.parseBool(data.is_archived),
+      is_meeting_draft: this.parseBool(data.is_meeting_draft),
       created_by: userId || 'USR-1',
     };
-    const res = await this.bridge.post('insert', { sheet: 'Notes', data: payload });
-    return res.data;
+
+    return this.prisma.note.create({
+      data: payload,
+    });
   }
 
   async update(id: string, data: any, userId: string) {
     // Verifikasi kepemilikan terlebih dahulu
     await this.findOne(id, userId);
-    const res = await this.bridge.post('update', { sheet: 'Notes', id, data });
-    return res.data;
+
+    const payload: any = {};
+    if (data.title !== undefined) payload.title = data.title;
+    if (data.category !== undefined) payload.category = data.category;
+    if (data.content !== undefined) payload.content = data.content;
+    if (data.date !== undefined) payload.date = data.date;
+    if (data.time !== undefined) payload.time = data.time;
+    if (data.priority !== undefined) payload.priority = data.priority;
+    if (data.status !== undefined) payload.status = data.status;
+    if (data.is_favorite !== undefined) payload.is_favorite = this.parseBool(data.is_favorite);
+    if (data.is_archived !== undefined) payload.is_archived = this.parseBool(data.is_archived);
+    if (data.is_meeting_draft !== undefined) payload.is_meeting_draft = this.parseBool(data.is_meeting_draft);
+
+    return this.prisma.note.update({
+      where: { id },
+      data: payload,
+    });
   }
 
   async remove(id: string, userId: string) {
     // Verifikasi kepemilikan terlebih dahulu
     await this.findOne(id, userId);
-    const res = await this.bridge.post('delete', { sheet: 'Notes', id });
-    return res.data;
+
+    return this.prisma.note.delete({
+      where: { id },
+    });
   }
 }

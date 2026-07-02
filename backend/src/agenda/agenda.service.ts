@@ -1,40 +1,61 @@
 import { Injectable } from '@nestjs/common';
-import { GoogleBridgeService } from '../google-bridge/google-bridge.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class AgendaService {
-  constructor(private readonly bridge: GoogleBridgeService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAllAgenda(query: any) {
-    const res = await this.bridge.get('Agenda', query);
-    return res.data;
+    const items = await this.prisma.agenda.findMany();
+    return { items, total: items.length };
   }
 
   async createAgenda(data: any) {
-    const res = await this.bridge.post('insert', { sheet: 'Agenda', data });
-    return res.data;
+    const payload = {
+      title: data.title || '',
+      date: data.date || '',
+      time: data.time || '',
+      location: data.location || '',
+      category: data.category || 'Internal',
+      status: data.status || 'Terjadwal',
+    };
+    return this.prisma.agenda.create({
+      data: payload,
+    });
   }
 
   async updateAgenda(id: string, data: any) {
-    const res = await this.bridge.post('update', { sheet: 'Agenda', id, data });
-    return res.data;
+    const payload: any = {};
+    if (data.title !== undefined) payload.title = data.title;
+    if (data.date !== undefined) payload.date = data.date;
+    if (data.time !== undefined) payload.time = data.time;
+    if (data.location !== undefined) payload.location = data.location;
+    if (data.category !== undefined) payload.category = data.category;
+    if (data.status !== undefined) payload.status = data.status;
+
+    return this.prisma.agenda.update({
+      where: { id },
+      data: payload,
+    });
   }
 
   async removeAgenda(id: string) {
-    return this.bridge.post('delete', { sheet: 'Agenda', id });
+    return this.prisma.agenda.delete({
+      where: { id },
+    });
   }
 
   /**
    * Calendar aggregation endpoint
    */
   async getCalendarEvents(month?: string, year?: string) {
-    const [agdRes, mtgRes, tskRes] = await Promise.all([
-      this.bridge.get('Agenda'),
-      this.bridge.get('Meetings'),
-      this.bridge.get('Tasks'),
+    const [agdItems, mtgItems, taskItems] = await Promise.all([
+      this.prisma.agenda.findMany(),
+      this.prisma.meeting.findMany(),
+      this.prisma.task.findMany(),
     ]);
 
-    const agenda = (agdRes.data?.items || []).map((x: any) => ({
+    const agenda = agdItems.map((x: any) => ({
       id: x.id,
       title: x.title,
       date: x.date,
@@ -44,7 +65,7 @@ export class AgendaService {
       location: x.location,
     }));
 
-    const meetings = (mtgRes.data?.items || []).map((x: any) => ({
+    const meetings = mtgItems.map((x: any) => ({
       id: x.id,
       title: `[Meeting] ${x.title}`,
       date: x.date,
@@ -54,7 +75,7 @@ export class AgendaService {
       location: x.location,
     }));
 
-    const tasks = (tskRes.data?.items || []).map((x: any) => ({
+    const tasks = taskItems.map((x: any) => ({
       id: x.id,
       title: `[Task] ${x.title}`,
       date: x.deadline,

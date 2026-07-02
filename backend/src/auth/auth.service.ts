@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { GoogleBridgeService } from '../google-bridge/google-bridge.service';
+import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -8,30 +9,30 @@ export class AuthService {
 
   constructor(
     private readonly jwtService: JwtService,
-    private readonly bridge: GoogleBridgeService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async login(email: string, pass: string) {
-    // Ambil data user langsung dari database Google Sheet
-    const res = await this.bridge.get('Users', { filterKey: 'email', filterValue: email });
-    const users = res.data?.items || [];
-    const user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+    // Ambil data user langsung dari database PostgreSQL via Prisma
+    const user = await this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
 
     if (!user) {
       throw new UnauthorizedException('Email atau password salah');
     }
 
-    // Validasi password: pencocokan tepat jika diset, atau fallback ke default 'password123' jika kolom password di database kosong/legacy
-    const expectedPassword = user.password || 'password123';
-    if (pass !== expectedPassword) {
+    // Validasi password menggunakan bcrypt
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    if (!isPasswordValid) {
       throw new UnauthorizedException('Email atau password salah');
     }
 
-    // Role mapping: mendukung role_id (legacy) dan role (baru dari Master Data)
+    // Role mapping: mendukung nama role langsung
     let roleName = 'Viewer';
-    let roleId = user.role_id || 'ROLE-4';
+    let roleId = 'ROLE-4';
 
-    const rawRole = (user.role || user.role_id || '').toString().toUpperCase();
+    const rawRole = (user.role || '').toUpperCase();
     if (rawRole.includes('ADMIN') || rawRole.includes('ROLE-1')) {
       roleName = 'Admin';
       roleId = 'ROLE-1';
@@ -65,7 +66,7 @@ export class AuthService {
         roleId: roleId,
         roleName: roleName,
         phone: user.phone || '',
-        avatar: user.avatar || '',
+        avatar: '',
       },
       accessToken,
       refreshToken,
