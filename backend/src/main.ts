@@ -2,7 +2,16 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
+import { AllExceptionsFilter } from './all-exceptions.filter';
 import express = require('express');
+import dns = require('dns');
+
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (e) {
+  // ignore
+}
+
 const server = express();
 const logger = new Logger('Bootstrap');
 let isInitialized = false;
@@ -11,6 +20,8 @@ async function bootstrap() {
   if (isInitialized) return;
   const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
   
+  app.useGlobalFilters(new AllExceptionsFilter());
+
   app.enableCors({
     origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',

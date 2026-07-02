@@ -39,7 +39,7 @@ interface MoreMenuItem {
 
 export const MobileNav = () => {
   const pathname = usePathname() || '/';
-  const { hasRole, logout } = useAuth();
+  const { user, hasRole, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
@@ -91,10 +91,10 @@ export const MobileNav = () => {
   ];
 
   const quickActions = [
-    { label: 'Catatan Baru', href: '/notes?new=true', icon: FileText, desc: 'Tulis ide atau notulen' },
-    { label: 'Jadwalkan Rapat', href: '/meetings?new=true', icon: Users, desc: 'Buat agenda rapat baru' },
-    { label: 'Tanya AI', href: '/ai-assistant', icon: Sparkles, desc: 'Rangkum transkrip otomatis' },
-  ];
+    { label: 'Catatan Baru', href: '/notes?new=true', icon: FileText, desc: 'Tulis ide atau notulen', roles: ['Admin', 'Manager', 'Staff'] },
+    { label: 'Jadwalkan Rapat', href: '/meetings?new=true', icon: Users, desc: 'Buat agenda rapat baru', roles: ['Admin', 'Manager'] },
+    { label: 'Tanya AI', href: '/ai-assistant', icon: Sparkles, desc: 'Rangkum transkrip otomatis', roles: ['Admin', 'Manager', 'Staff', 'Viewer'] },
+  ].filter(act => !user || act.roles.includes(user.roleName));
 
   const isOnMorePage = ['/tasks', '/calendar', '/ai-assistant', '/monitoring', '/reports', '/master'].some(p => pathname.startsWith(p));
   const closeAll = () => { setShowMoreMenu(false); setShowQuickAdd(false); };

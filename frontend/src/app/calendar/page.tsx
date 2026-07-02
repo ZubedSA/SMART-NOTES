@@ -126,6 +126,7 @@ const formatTimeToHM = (timeStr: string) => {
 
 export default function CalendarPage() {
   const { user, loading: authLoading } = useAuth();
+  const isWritable = user && (user.roleName === 'Admin' || user.roleName === 'Manager');
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth()); // 0-11
@@ -481,12 +482,14 @@ export default function CalendarPage() {
               Lini masa kegiatan organisasi, jadwal rapat, dan batas tenggat waktu tugas
             </p>
           </div>
-          <button
-            onClick={openCreateAgenda}
-            className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Agenda
-          </button>
+          {isWritable && (
+            <button
+              onClick={openCreateAgenda}
+              className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Agenda
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-end">
           <Link
@@ -495,12 +498,14 @@ export default function CalendarPage() {
           >
             <TrendingUp className="w-4 h-4 text-accent" /> Dashboard
           </Link>
-          <button
-            onClick={openCreateAgenda}
-            className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5px]" /> Tambah Agenda Baru
-          </button>
+          {isWritable && (
+            <button
+              onClick={openCreateAgenda}
+              className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5px]" /> Tambah Agenda Baru
+            </button>
+          )}
         </div>
       </div>
 
@@ -613,12 +618,14 @@ export default function CalendarPage() {
               {selectedDayEvents.length === 0 ? (
                 <div className="text-center py-12 space-y-2">
                   <p className="text-xs text-slate-400 font-bold">Tidak ada agenda pada tanggal ini</p>
-                  <button
-                    onClick={openCreateAgenda}
-                    className="px-4 py-2 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-800 text-[10px] font-bold text-slate-500 hover:text-accent hover:border-accent transition-colors"
-                  >
-                    + Buat Agenda Baru
-                  </button>
+                  {isWritable && (
+                    <button
+                      onClick={openCreateAgenda}
+                      className="px-4 py-2 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-800 text-[10px] font-bold text-slate-500 hover:text-accent hover:border-accent transition-colors"
+                    >
+                      + Buat Agenda Baru
+                    </button>
+                  )}
                 </div>
               ) : (
                 selectedDayEvents.map((ev) => (
@@ -628,7 +635,7 @@ export default function CalendarPage() {
                       <span className="text-[9px] font-bold px-2 py-0.5 rounded-lg text-white uppercase tracking-wider" style={{ backgroundColor: ev.color }}>
                         {ev.type}
                       </span>
-                      {ev.type === 'agenda' && (
+                      {ev.type === 'agenda' && isWritable && (
                         <div className="flex gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => openEditAgenda(ev)}
@@ -638,7 +645,7 @@ export default function CalendarPage() {
                           </button>
                           <button
                             onClick={() => handleDeleteAgenda(ev)}
-                            className="p-1 rounded bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
+                            className="p-1 rounded bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800/60 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>

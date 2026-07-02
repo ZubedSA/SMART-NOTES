@@ -12,20 +12,10 @@ export class AuthService {
   ) {}
 
   async login(email: string, pass: string) {
+    // Ambil data user langsung dari database Google Sheet
     const res = await this.bridge.get('Users', { filterKey: 'email', filterValue: email });
     const users = res.data?.items || [];
-    let user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
-
-    // Fallback development users jika belum ada di database spreadsheet
-    if (!user) {
-      if (email === 'admin@smart.id' && pass === 'password123') {
-        user = { id: 'USR-1', email: 'admin@smart.id', name: 'Administrator', role_id: 'ROLE-1', phone: '081234567890' };
-      } else if (email === 'manager@smart.id' && pass === 'password123') {
-        user = { id: 'USR-2', email: 'manager@smart.id', name: 'Manager Rapat', role_id: 'ROLE-2', phone: '081298765432' };
-      } else if (email === 'staff@smart.id' && pass === 'password123') {
-        user = { id: 'USR-3', email: 'staff@smart.id', name: 'Staff Lapangan', role_id: 'ROLE-3', phone: '081311223344' };
-      }
-    }
+    const user = users.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
 
     if (!user) {
       throw new UnauthorizedException('Email atau password salah');

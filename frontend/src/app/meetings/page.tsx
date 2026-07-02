@@ -93,11 +93,14 @@ const TASK_STATUS_OPTIONS = ['Belum', 'Proses', 'Selesai'];
 
 export default function MeetingsPage() {
   const { user, loading: authLoading } = useAuth();
+  const isWritable = user && (user.roleName === 'Admin' || user.roleName === 'Manager');
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [actionItems, setActionItems] = useState<ActionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'meetings' | 'actions'>('meetings');
   const [draftNotes, setDraftNotes] = useState<any[]>([]);
+  const [showDraftSelectorModal, setShowDraftSelectorModal] = useState(false);
+  const [draftSelectorTarget, setDraftSelectorTarget] = useState<'meeting' | 'notulen'>('meeting');
 
   // Meeting Modal
   const [showMeetingModal, setShowMeetingModal] = useState(false);
@@ -158,7 +161,7 @@ export default function MeetingsPage() {
       const [mtgRes, tskRes, notesRes] = await Promise.all([
         api.get('/meeting'),
         api.get('/meeting-task'),
-        api.get('/notes').catch(() => null),
+        api.get('/notes?meetingDrafts=true').catch(() => null),
       ]);
       const fetchedMeetings = mtgRes?.data?.data?.items || [];
       const fetchedTasks = tskRes?.data?.data?.items || [];
@@ -950,7 +953,7 @@ export default function MeetingsPage() {
               Rekam notulen, buat action items, dan pantau tindak lanjut
             </p>
           </div>
-          {activeTab === 'meetings' ? (
+          {isWritable && (activeTab === 'meetings' ? (
             <button onClick={openCreateMeeting} className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all">
               <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Rapat
             </button>
@@ -958,13 +961,13 @@ export default function MeetingsPage() {
             <button onClick={() => openCreateTask('')} className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all">
               <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Action
             </button>
-          )}
+          ))}
         </div>
         <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-end">
           <Link href="/monitoring" className="flex-1 md:flex-initial text-center px-4 py-2.5 bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 border border-slate-200/50 dark:border-slate-800/40 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
             <TrendingUp className="w-4 h-4 text-accent" /> Dashboard
           </Link>
-          {activeTab === 'meetings' ? (
+          {isWritable && (activeTab === 'meetings' ? (
             <button onClick={openCreateMeeting} className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
               <Plus className="w-4 h-4 stroke-[2.5px]" /> Buat Rapat Baru
             </button>
@@ -972,7 +975,7 @@ export default function MeetingsPage() {
             <button onClick={() => openCreateTask('')} className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all">
               <Plus className="w-4 h-4 stroke-[2.5px]" /> Buat Action Item Baru
             </button>
-          )}
+          ))}
         </div>
       </div>
 
@@ -1077,33 +1080,36 @@ export default function MeetingsPage() {
                       )}
                       </div>
 
-                    {/* Tombol Aksi - Lebih Menarik & Mudah Dipahami */}
                     <div className="flex items-center gap-1.5 flex-wrap pt-1 lg:pt-0">
                       {/* Workflow: Next Status Button */}
-                      {nextStatus && (
+                      {nextStatus && isWritable && (
                         <button onClick={() => handleUpdateStatus(mtg.id, nextStatus)} className="px-3 py-1.5 rounded-xl text-[10px] font-bold bg-gradient-to-r from-primary via-primary/95 to-accent text-white shadow-premium hover:shadow-accent/25 hover:scale-[1.02] active:scale-[0.98] transition-all">
                           {nextLabel}
                         </button>
                       )}
                       
                       {/* Mobile action trigger */}
-                      <button 
-                        onClick={() => setMobileActionMeeting(mtg)} 
-                        className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold bg-gradient-to-r from-primary via-primary/95 to-accent text-white shadow-premium active:scale-[0.97] transition-all"
-                        title="Pilihan Aksi"
-                      >
-                        <Settings className="w-3.5 h-3.5" />
-                        <span>Aksi</span>
-                      </button>
+                      {isWritable && (
+                        <button 
+                          onClick={() => setMobileActionMeeting(mtg)} 
+                          className="flex sm:hidden items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold bg-gradient-to-r from-primary via-primary/95 to-accent text-white shadow-premium active:scale-[0.97] transition-all"
+                          title="Pilihan Aksi"
+                        >
+                          <Settings className="w-3.5 h-3.5" />
+                          <span>Aksi</span>
+                        </button>
+                      )}
 
-                      <button 
-                        onClick={() => openNotulen(mtg)} 
-                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
-                        title="Isi Notulen Rapat"
-                      >
-                        <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
-                        <span>Notulen</span>
-                      </button>
+                      {isWritable && (
+                        <button 
+                          onClick={() => openNotulen(mtg)} 
+                          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-650 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
+                          title="Isi Notulen Rapat"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Notulen</span>
+                        </button>
+                      )}
 
                       <button 
                         onClick={() => exportToPDF(mtg, tasks)} 
@@ -1123,32 +1129,38 @@ export default function MeetingsPage() {
                         <span>Bagikan</span>
                       </button>
 
-                      <button 
-                        onClick={() => openCreateTask(mtg.id)} 
-                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
-                        title="Tambah Tugas Tindak Lanjut"
-                      >
-                        <ClipboardList className="w-3.5 h-3.5 text-green-500" />
-                        <span>Tugas</span>
-                      </button>
+                      {isWritable && (
+                        <button 
+                          onClick={() => openCreateTask(mtg.id)} 
+                          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
+                          title="Tambah Tugas Tindak Lanjut"
+                        >
+                          <ClipboardList className="w-3.5 h-3.5 text-green-500" />
+                          <span>Tugas</span>
+                        </button>
+                      )}
 
-                      <button 
-                        onClick={() => openEditMeeting(mtg)} 
-                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
-                        title="Edit Rapat"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 text-blue-500" />
-                        <span>Edit</span>
-                      </button>
+                      {isWritable && (
+                        <button 
+                          onClick={() => openEditMeeting(mtg)} 
+                          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-white bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
+                          title="Edit Rapat"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-blue-500" />
+                          <span>Edit</span>
+                        </button>
+                      )}
 
-                      <button 
-                        onClick={() => handleDeleteMeeting(mtg.id)} 
-                        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
-                        title="Hapus Rapat"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-500" />
-                        <span>Hapus</span>
-                      </button>
+                      {isWritable && (
+                        <button 
+                          onClick={() => handleDeleteMeeting(mtg.id)} 
+                          className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold border border-slate-200/60 dark:border-slate-800/60 text-slate-600 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 bg-slate-50/20 hover:bg-slate-50 dark:bg-slate-900/20 dark:hover:bg-slate-900/80 transition-all active:scale-[0.97]"
+                          title="Hapus Rapat"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                          <span>Hapus</span>
+                        </button>
+                      )}
 
                       <button 
                         onClick={() => setExpandedMeetingId(expanded ? null : mtg.id)} 
@@ -1218,7 +1230,9 @@ export default function MeetingsPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">🎯 Action Items ({tasks.length})</p>
-                        <button onClick={() => openCreateTask(mtg.id)} className="text-[11px] text-accent font-bold hover:underline">+ Tambah</button>
+                        {isWritable && (
+                          <button onClick={() => openCreateTask(mtg.id)} className="text-[11px] text-accent font-bold hover:underline">+ Tambah</button>
+                        )}
                       </div>
                       {tasks.length === 0 ? (
                         <p className="text-xs text-slate-400 italic">Belum ada action item untuk rapat ini</p>
@@ -1240,8 +1254,9 @@ export default function MeetingsPage() {
                                 {/* Quick Status Toggle */}
                                 <select
                                   value={task.status}
+                                  disabled={!isWritable}
                                   onChange={(e) => handleQuickUpdateTask(task.id, { status: e.target.value, progress: e.target.value === 'Selesai' ? '100' : task.progress })}
-                                  className="text-[10px] font-bold rounded-lg px-2 py-1 border bg-white dark:bg-slate-800 outline-none cursor-pointer"
+                                  className="text-[10px] font-bold rounded-lg px-2 py-1 border bg-white dark:bg-slate-800 outline-none cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                                 >
                                   {TASK_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
@@ -1250,7 +1265,9 @@ export default function MeetingsPage() {
                                   <div className="bg-accent h-full rounded-full transition-all" style={{ width: `${task.progress}%` }} />
                                 </div>
                                 <span className="text-[10px] font-bold text-slate-500 w-8">{task.progress}%</span>
-                                <button onClick={() => openEditTask(task)} className="p-1 rounded-lg text-slate-400 hover:text-blue-500"><Edit3 className="w-3.5 h-3.5" /></button>
+                                {isWritable && (
+                                  <button onClick={() => openEditTask(task)} className="p-1 rounded-lg text-slate-400 hover:text-blue-500"><Edit3 className="w-3.5 h-3.5" /></button>
+                                )}
                               </div>
                             </div>
                           ))}
@@ -1363,8 +1380,9 @@ export default function MeetingsPage() {
                         <div className="flex items-center gap-2 shrink-0">
                           <select
                             value={task.status}
+                            disabled={!isWritable}
                             onChange={(e) => handleQuickUpdateTask(task.id, { status: e.target.value, progress: e.target.value === 'Selesai' ? '100' : task.progress })}
-                            className="text-[10px] font-bold rounded-lg px-2 py-1.5 border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 outline-none cursor-pointer"
+                            className="text-[10px] font-bold rounded-lg px-2 py-1.5 border bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 outline-none cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                           >
                             {TASK_STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                           </select>
@@ -1372,10 +1390,12 @@ export default function MeetingsPage() {
                             <div className="bg-accent h-full rounded-full transition-all" style={{ width: `${task.progress}%` }} />
                           </div>
                           <span className="text-[10px] font-bold w-8">{task.progress}%</span>
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => openEditTask(task)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-colors"><Edit3 className="w-4 h-4" /></button>
-                            <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"><Trash2 className="w-4 h-4" /></button>
-                          </div>
+                          {isWritable && (
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => openEditTask(task)} className="p-1.5 rounded-lg text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-955/20 transition-colors"><Edit3 className="w-4 h-4" /></button>
+                              <button onClick={() => handleDeleteTask(task.id)} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-955/20 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1444,43 +1464,16 @@ export default function MeetingsPage() {
                     <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase pl-0.5">
                       Pembahasan & Keputusan Rapat (Sinkron)
                     </label>
-                    <div className="relative">
-                      <select
-                        onChange={(e) => {
-                          const noteId = e.target.value;
-                          if (!noteId) return;
-                          const selectedNote = draftNotes.find(n => n.id === noteId);
-                          if (selectedNote) {
-                            const newPoint = {
-                              discussion: selectedNote.title || '',
-                              decision: selectedNote.content || '',
-                            };
-                            // Jika hanya ada satu poin kosong, timpa saja
-                            const cleanPoints = meetingPoints.filter(p => p.discussion.trim() !== '' || p.decision.trim() !== '');
-                            const mergedPoints = [...cleanPoints, newPoint];
-                            setMeetingPoints(mergedPoints);
-                            alert(`Berhasil mengimpor draf dari catatan "${selectedNote.title}"!`);
-                          }
-                          // Reset select value
-                          e.target.value = '';
-                        }}
-                        className="px-3 py-1.5 text-[10px] font-bold rounded-lg border border-slate-200 dark:border-slate-800/80 bg-white dark:bg-slate-900/30 text-slate-500 dark:text-slate-400 transition-all cursor-pointer outline-none focus:ring-1 focus:ring-accent"
-                        defaultValue=""
-                      >
-                        {draftNotes.length === 0 ? (
-                          <option value="" disabled>📥 Belum ada draf catatan rapat (Buat di Halaman Catatan)</option>
-                        ) : (
-                          <>
-                            <option value="" disabled>📥 Ambil Poin dari Draf Catatan...</option>
-                            {draftNotes.map(n => (
-                              <option key={n.id} value={n.id}>
-                                {n.title}
-                              </option>
-                            ))}
-                          </>
-                        )}
-                      </select>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftSelectorTarget('meeting');
+                        setShowDraftSelectorModal(true);
+                      }}
+                      className="px-3.5 py-1.5 text-[10px] font-bold rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-500/10 text-amber-600 dark:text-amber-450 hover:bg-amber-500/20 transition-all active:scale-[0.97]"
+                    >
+                      📥 Ambil Poin dari Draf Catatan
+                    </button>
                   </div>
                   <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-1 no-scrollbar">
                     {meetingPoints.map((pt, idx) => (
@@ -1564,9 +1557,21 @@ export default function MeetingsPage() {
                 </h2>
                 <p className="text-[10px] text-slate-500 mt-0.5">Tulis poin bahasan rapat bersandingan langsung dengan keputusan solusinya</p>
               </div>
-              <button onClick={() => setShowNotulenModal(false)} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftSelectorTarget('notulen');
+                    setShowDraftSelectorModal(true);
+                  }}
+                  className="px-3.5 py-1.5 text-[10px] font-bold rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-500/10 text-amber-600 dark:text-amber-450 hover:bg-amber-500/20 transition-all active:scale-[0.97]"
+                >
+                  📥 Ambil Poin dari Draf Catatan
+                </button>
+                <button type="button" onClick={() => setShowNotulenModal(false)} className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <X className="w-5 h-5 text-slate-500" />
+                </button>
+              </div>
             </div>
 
             {/* Form */}
@@ -1887,6 +1892,90 @@ export default function MeetingsPage() {
               >
                 Ya, Hapus
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== MODAL: PILIH DRAF CATATAN GLOBAL ===== */}
+      {showDraftSelectorModal && (
+        <div className="fixed inset-0 z-[110000] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/40 shadow-luxury rounded-[2.5rem] flex flex-col max-h-[80vh] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/40 p-6 shrink-0 bg-slate-50/20 dark:bg-slate-900/10">
+              <div>
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  📥 Pilih Draf Catatan Rapat Global
+                </h3>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider mt-1">
+                  Ambil poin draf catatan dari seluruh anggota tim
+                </p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setShowDraftSelectorModal(false)} 
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors"
+              >
+                <X className="w-5 h-5 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200" />
+              </button>
+            </div>
+            
+            {/* Body */}
+            <div className="p-6 overflow-y-auto flex-1 space-y-3.5 no-scrollbar pb-6 bg-slate-50/5 dark:bg-slate-900/5">
+              {draftNotes.length === 0 ? (
+                <div className="text-center py-12 space-y-3">
+                  <FileText className="w-12 h-12 text-slate-300 dark:text-slate-700 mx-auto" />
+                  <p className="text-xs font-bold text-slate-400 dark:text-slate-550 uppercase tracking-wider">Belum ada draf catatan rapat global</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[50vh]">
+                  {draftNotes.map((note) => (
+                    <div key={note.id} className="p-4 rounded-2xl bg-white dark:bg-slate-850 border border-slate-200/50 dark:border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-accent/40 dark:hover:border-accent/40 transition-colors shadow-sm">
+                      <div className="flex-1 min-w-0 space-y-1.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-extrabold text-slate-850 dark:text-white leading-tight">{note.title}</span>
+                          <span className="text-[8px] px-2 py-0.5 rounded-md font-bold bg-primary/10 text-primary dark:bg-emerald-500/10 dark:text-emerald-400 border border-primary/20 dark:border-emerald-500/20 uppercase tracking-wide">
+                            {note.category}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-550 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                          {note.content}
+                        </p>
+                        <div className="flex items-center gap-3 text-[9px] text-slate-400 font-bold uppercase pt-0.5">
+                          <span className="flex items-center gap-1.5">
+                            👤 Pembuat: <strong className="text-slate-650 dark:text-slate-300">{note.created_by_name || 'Tidak Diketahui'}</strong>
+                          </span>
+                          <span>📅 {note.date ? new Date(note.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newPoint = {
+                            discussion: note.title || '',
+                            decision: note.content || '',
+                          };
+                          if (draftSelectorTarget === 'meeting') {
+                            const cleanPoints = meetingPoints.filter(p => p.discussion.trim() !== '' || p.decision.trim() !== '');
+                            setMeetingPoints([...cleanPoints, newPoint]);
+                          } else {
+                            const cleanPoints = notulenForm.points.filter(p => p.discussion.trim() !== '' || p.decision.trim() !== '');
+                            setNotulenForm({
+                              ...notulenForm,
+                              points: [...cleanPoints, newPoint]
+                            });
+                          }
+                          setShowDraftSelectorModal(false);
+                          alert(`Berhasil mengimpor draf dari catatan "${note.title}"!`);
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider shadow-sm active:scale-95 transition-all text-center sm:self-center self-stretch whitespace-nowrap"
+                      >
+                        Pilih & Impor
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

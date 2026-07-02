@@ -49,25 +49,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       localStorage.setItem('user_profile', JSON.stringify(userData));
       setUser(userData);
     } catch (error: any) {
-      // Mock login fallback jika backend belum nyala
-      if (email.includes('@smart.id')) {
-        let roleName: 'Admin' | 'Manager' | 'Staff' | 'Viewer' = 'Admin';
-        if (email.includes('manager')) roleName = 'Manager';
-        if (email.includes('staff')) roleName = 'Staff';
-        const mockUser: User = {
-          id: `USR-${Math.floor(Math.random() * 100)}`,
-          email,
-          name: roleName + ' Smart Notes',
-          roleId: 'ROLE-1',
-          roleName,
-          phone: '081234567890',
-        };
-        localStorage.setItem('token', 'mock-jwt-token-2026');
-        localStorage.setItem('user_profile', JSON.stringify(mockUser));
-        setUser(mockUser);
-        return;
-      }
-      throw new Error(error.response?.data?.message || 'Gagal login');
+      throw new Error(error.response?.data?.message || 'Gagal login: email atau password salah');
     }
   };
 

@@ -31,6 +31,7 @@ import {
 
 export default function NotesPage() {
   const { user, loading: authLoading } = useAuth();
+  const isWritable = user && (user.roleName === 'Admin' || user.roleName === 'Manager' || user.roleName === 'Staff');
   const { showToast } = useToast();
   const [notes, setNotes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -352,12 +353,14 @@ export default function NotesPage() {
               Kelola ide, riset, dan dokumentasi penting Anda
             </p>
           </div>
-          <button
-            onClick={() => handleOpenModal()}
-            className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Catatan
-          </button>
+          {isWritable && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Catatan
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-end">
           <Link
@@ -455,12 +458,14 @@ export default function NotesPage() {
         <div className="bg-white dark:bg-slate-900 p-10 rounded-3xl border border-slate-200/80 dark:border-slate-800/80 text-center space-y-3 shadow-sm my-4">
           <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto stroke-1" />
           <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">Tidak ada catatan yang sesuai</p>
-          <button
-            onClick={() => handleOpenModal()}
-            className="text-xs text-accent font-bold hover:underline"
-          >
-            + Buat Catatan Sekarang
-          </button>
+          {isWritable && (
+            <button
+              onClick={() => handleOpenModal()}
+              className="text-xs text-accent font-bold hover:underline"
+            >
+              + Buat Catatan Sekarang
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4 pb-4">
@@ -486,52 +491,59 @@ export default function NotesPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400 mt-2.5 font-medium">
                         <span className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-350"><Clock className="w-4 h-4 text-accent" /> {formatDisplayDate(note.date)}</span>
+                        {note.created_by_name && (
+                          <span className="flex items-center gap-1.5 font-bold text-indigo-650 dark:text-indigo-400 bg-indigo-500/5 px-2 py-0.5 rounded-lg border border-indigo-500/10">
+                            👤 Oleh: {note.created_by_name}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> Prioritas: {note.priority || 'Medium'}</span>
                         {note.location && <span className="flex items-center gap-1.5 text-slate-400"><MapPin className="w-4 h-4" /> {note.location}</span>}
                       </div>
                     </div>
  
-                    <div className="flex items-center gap-1.5 pt-1 md:pt-0">
-                      <button
-                        onClick={() => toggleFavorite(note)}
-                        className={`p-2 rounded-xl border transition-all active:scale-[0.97] ${
-                          isFav
-                            ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-500 border-amber-200/50 dark:border-amber-900/30'
-                            : 'border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-amber-500'
-                        }`}
-                        title="Favorit"
-                      >
-                        <Star className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
-                      </button>
-                      <Link
-                        href={`/tasks?new=true&title=${encodeURIComponent(note.title || '')}&category=${encodeURIComponent(note.category || '')}`}
-                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-accent transition-all active:scale-[0.97]"
-                        title="Jadikan Tugas"
-                      >
-                        <CheckSquare className="w-4 h-4" />
-                      </Link>
-                      <button
-                        onClick={() => handleOpenAgendaModal(note)}
-                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-emerald-500 transition-all active:scale-[0.97]"
-                        title="Jadikan Agenda"
-                      >
-                        <Calendar className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleOpenModal(note)}
-                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-blue-500 transition-all active:scale-[0.97]"
-                        title="Edit"
-                      >
-                        <Edit3 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(note.id)}
-                        className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-all active:scale-[0.97]"
-                        title="Hapus"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                    {isWritable && (
+                      <div className="flex items-center gap-1.5 pt-1 md:pt-0">
+                        <button
+                          onClick={() => toggleFavorite(note)}
+                          className={`p-2 rounded-xl border transition-all active:scale-[0.97] ${
+                            isFav
+                              ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-500 border-amber-200/50 dark:border-amber-900/30'
+                              : 'border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-amber-500'
+                          }`}
+                          title="Favorit"
+                        >
+                          <Star className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
+                        </button>
+                        <Link
+                          href={`/tasks?new=true&title=${encodeURIComponent(note.title || '')}&category=${encodeURIComponent(note.category || '')}`}
+                          className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-accent transition-all active:scale-[0.97]"
+                          title="Jadikan Tugas"
+                        >
+                          <CheckSquare className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => handleOpenAgendaModal(note)}
+                          className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-455 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-emerald-500 transition-all active:scale-[0.97]"
+                          title="Jadikan Agenda"
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenModal(note)}
+                          className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-blue-500 transition-all active:scale-[0.97]"
+                          title="Edit"
+                        >
+                          <Edit3 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(note.id)}
+                          className="p-2 rounded-xl border border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-red-50 dark:hover:bg-red-955/20 hover:text-red-500 transition-all active:scale-[0.97]"
+                          title="Hapus"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
  

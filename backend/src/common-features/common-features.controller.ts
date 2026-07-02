@@ -1,6 +1,8 @@
 import { Controller, Get, Post, Put, Delete, Body, Query, Param, UseGuards } from '@nestjs/common';
 import { CommonFeaturesService } from './common-features.service';
 import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller()
 export class CommonFeaturesController {
@@ -12,21 +14,24 @@ export class CommonFeaturesController {
     return { success: true, data };
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('Admin', 'Manager')
   @Post('categories')
   async createCategory(@Body() body: any) {
     const data = await this.service.createCategory(body);
     return { success: true, data };
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('Admin', 'Manager')
   @Put('categories/:id')
   async updateCategory(@Param('id') id: string, @Body() body: any) {
     const data = await this.service.updateCategory(id, body);
     return { success: true, data };
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('Admin', 'Manager')
   @Delete('categories/:id')
   async deleteCategory(@Param('id') id: string) {
     const data = await this.service.deleteCategory(id);
@@ -45,25 +50,56 @@ export class CommonFeaturesController {
     return { success: true, data };
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('Admin', 'Manager')
   @Post('users')
   async createUser(@Body() body: any) {
-    const data = await this.service.createUser(body);
-    return { success: true, data };
+    try {
+      const data = await this.service.createUser(body);
+      return { success: true, data };
+    } catch (error: any) {
+      this.logControllerError('POST /users', error);
+      throw error;
+    }
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('Admin', 'Manager')
   @Put('users/:id')
   async updateUser(@Param('id') id: string, @Body() body: any) {
-    const data = await this.service.updateUser(id, body);
-    return { success: true, data };
+    try {
+      const data = await this.service.updateUser(id, body);
+      return { success: true, data };
+    } catch (error: any) {
+      this.logControllerError(`PUT /users/${id}`, error);
+      throw error;
+    }
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('Admin', 'Manager')
   @Delete('users/:id')
   async deleteUser(@Param('id') id: string) {
-    const data = await this.service.deleteUser(id);
-    return { success: true, data };
+    try {
+      const data = await this.service.deleteUser(id);
+      return { success: true, data };
+    } catch (error: any) {
+      this.logControllerError(`DELETE /users/${id}`, error);
+      throw error;
+    }
+  }
+
+  private logControllerError(endpoint: string, error: any) {
+    try {
+      const fs = require('fs');
+      const path = require('path');
+      const logPath = path.join(process.cwd(), 'backend-errors.log');
+      const timestamp = new Date().toISOString();
+      const message = `[${timestamp}] Controller ${endpoint} Error: ${error.message} | Status: ${error.status || 500} | Stack: ${error.stack}\n`;
+      fs.appendFileSync(logPath, message);
+    } catch (e) {
+      // ignore
+    }
   }
 
   @Get('search')
@@ -72,7 +108,8 @@ export class CommonFeaturesController {
     return { success: true, data };
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles('Admin', 'Manager')
   @Post('upload')
   async upload(@Body() body: { base64Data: string; fileName: string; mimeType: string }) {
     const data = await this.service.uploadFile(body.base64Data, body.fileName, body.mimeType);

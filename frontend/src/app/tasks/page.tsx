@@ -35,6 +35,7 @@ const INITIAL_FORM = {
 
 function TasksContent() {
   const { user, loading: authLoading } = useAuth();
+  const isWritable = user && (user.roleName === 'Admin' || user.roleName === 'Manager');
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
@@ -325,12 +326,14 @@ function TasksContent() {
               Atur alur kerja harian dan kolaborasi tim dari tahap perencanaan hingga selesai
             </p>
           </div>
-          <button
-            onClick={openCreateTask}
-            className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Task
-          </button>
+          {isWritable && (
+            <button
+              onClick={openCreateTask}
+              className="md:hidden px-4 py-2 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-[10px] uppercase tracking-wider flex items-center gap-1.5 shadow-premium active:scale-95 transition-all"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[2.5px]" /> Task
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2.5 self-stretch md:self-auto justify-end">
           <div className="bg-slate-105 dark:bg-slate-900/60 p-1 rounded-2xl flex items-center gap-1.5 border border-slate-200/40 dark:border-slate-800/40">
@@ -357,12 +360,14 @@ function TasksContent() {
           >
             <TrendingUp className="w-4 h-4 text-accent" /> Dashboard
           </Link>
-          <button
-            onClick={openCreateTask}
-            className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
-          >
-            <Plus className="w-4 h-4 stroke-[2.5px]" /> Buat Tugas Baru
-          </button>
+          {isWritable && (
+            <button
+              onClick={openCreateTask}
+              className="hidden md:flex px-5 py-2.5 bg-gradient-to-r from-primary via-primary/95 to-accent text-white font-bold rounded-xl text-xs items-center justify-center gap-1.5 shadow-premium hover:shadow-accent/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <Plus className="w-4 h-4 stroke-[2.5px]" /> Buat Tugas Baru
+            </button>
+          )}
         </div>
       </div>
 
@@ -455,8 +460,9 @@ function TasksContent() {
                         <div className="flex items-center gap-1.5 pt-2">
                           <select
                             value={task.status}
+                            disabled={!isWritable}
                             onChange={(e) => updateStatus(task.id, e.target.value)}
-                            className="flex-1 text-[10px] p-1.5 rounded-lg bg-slate-55 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-355 font-bold outline-none cursor-pointer"
+                            className="flex-1 text-[10px] p-1.5 rounded-lg bg-slate-55 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-655 dark:text-slate-355 font-bold outline-none cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                           >
                             {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                           </select>
@@ -469,22 +475,24 @@ function TasksContent() {
                               🔒 Rapat
                             </span>
                           ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => openEditTask(task)}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-accent hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(task.id)}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                            isWritable && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditTask(task)}
+                                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-accent hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(task.id)}
+                                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-955/20 transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )
                           )}
                         </div>
                       </div>
@@ -540,8 +548,9 @@ function TasksContent() {
                       <td className="p-4">
                         <select
                           value={task.status}
+                          disabled={!isWritable}
                           onChange={(e) => updateStatus(task.id, e.target.value)}
-                          className="p-1.5 rounded-xl bg-slate-55 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-xs cursor-pointer outline-none text-slate-700 dark:text-slate-350"
+                          className="p-1.5 rounded-xl bg-slate-55 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 font-bold text-xs cursor-pointer outline-none text-slate-700 dark:text-slate-350 disabled:opacity-75 disabled:cursor-not-allowed"
                         >
                           {statuses.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
@@ -556,22 +565,24 @@ function TasksContent() {
                               🔒 Rapat
                             </span>
                           ) : (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => openEditTask(task)}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-accent hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDelete(task.id)}
-                                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                            isWritable && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => openEditTask(task)}
+                                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-slate-500 hover:text-accent hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDelete(task.id)}
+                                  className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-red-500 hover:bg-red-50 dark:hover:bg-red-955/20 transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )
                           )}
                         </div>
                       </td>

@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { Lock, Mail, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('admin@smart.id');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -122,21 +122,7 @@ export default function LoginPage() {
             )}
           </button>
         </form>
- 
-        {/* Demo Credentials Hint */}
-        <div className="mt-8 p-4 rounded-2xl bg-slate-50/50 dark:bg-slate-900/10 border border-slate-200/40 dark:border-slate-800/40 text-[10px] md:text-[11px] text-slate-500 dark:text-slate-400 space-y-1.5">
-          <p className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-2">
-            <CheckCircle2 className="w-3.5 h-3.5 text-accent" /> Akun Demo Enterprise:
-          </p>
-          <div className="space-y-1 font-medium">
-            <p>Admin: <code className="text-accent font-semibold">admin@smart.id</code> / <code className="text-slate-400 dark:text-slate-500">password123</code></p>
-            <p>Manager: <code className="text-accent font-semibold">manager@smart.id</code> / <code className="text-slate-400 dark:text-slate-500">password123</code></p>
-          </div>
-          <hr className="my-2 border-slate-200/50 dark:border-slate-800/30" />
-          <p className="text-[9px] text-slate-400 dark:text-slate-500 italic leading-normal">
-            * Seluruh akun yang didaftarkan via Master Data dapat langsung login dengan email terdaftar & password default: <code className="text-accent font-semibold">password123</code>
-          </p>
-        </div>
+
       </div>
     </div>
   );

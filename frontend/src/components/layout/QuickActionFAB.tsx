@@ -4,17 +4,23 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, FileText, Users, CheckSquare, Calendar, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/context/AuthContext';
 
 export const QuickActionFAB = () => {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
+
+  if (!user) return null;
 
   const actions = [
-    { label: 'Tambah Catatan', icon: FileText, color: 'bg-emerald-600', href: '/notes?new=true' },
-    { label: 'Tambah Meeting', icon: Users, color: 'bg-blue-600', href: '/meetings?new=true' },
-    { label: 'Tambah Task', icon: CheckSquare, color: 'bg-amber-600', href: '/tasks?new=true' },
-    { label: 'Tambah Agenda', icon: Calendar, color: 'bg-purple-600', href: '/calendar?new=true' },
-  ];
+    { label: 'Tambah Catatan', icon: FileText, color: 'bg-emerald-600', href: '/notes?new=true', roles: ['Admin', 'Manager', 'Staff'] },
+    { label: 'Tambah Meeting', icon: Users, color: 'bg-blue-600', href: '/meetings?new=true', roles: ['Admin', 'Manager'] },
+    { label: 'Tambah Task', icon: CheckSquare, color: 'bg-amber-600', href: '/tasks?new=true', roles: ['Admin', 'Manager'] },
+    { label: 'Tambah Agenda', icon: Calendar, color: 'bg-purple-600', href: '/calendar?new=true', roles: ['Admin', 'Manager'] },
+  ].filter(act => act.roles.includes(user.roleName));
+
+  if (actions.length === 0) return null;
 
   const handleAction = (href: string) => {
     setOpen(false);
