@@ -74,7 +74,6 @@
 }
 .no-scrollbar {
   -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
 }
 
 /* ====== MOBILE DOCK NAVBAR (Ultra Premium Floating Island) ====== */
@@ -94,8 +93,8 @@
   background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(226, 232, 240, 0.5);
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05), 0 20px 40px -15px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .dark .mobile-dock {
@@ -112,8 +111,8 @@
   bottom: 0;
   z-index: 99998;
   background: rgba(8, 12, 20, 0.4);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -128,8 +127,8 @@
   border: 1px solid rgba(226, 232, 240, 0.6);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
   padding: 24px 20px;
-  backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .dark .mobile-dock-drawer {

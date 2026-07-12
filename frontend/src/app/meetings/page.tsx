@@ -1684,7 +1684,48 @@ export default function MeetingsPage() {
                 </div>
                 <div>
                   <label className={labelClass}>Judul Action Item *</label>
-                  <input type="text" required value={taskForm.title} onChange={(e) => setTaskForm({...taskForm, title: e.target.value})} placeholder="Contoh: Siapkan laporan keuangan" className={inputClass} />
+                  <div className="space-y-2.5">
+                    {taskForm.meeting_id && (() => {
+                      const selectedMeeting = meetings.find(m => m.id === taskForm.meeting_id);
+                      const points = selectedMeeting ? parseNotulenPoints(selectedMeeting.discussion || '', selectedMeeting.decision || '').filter(p => p.decision || p.discussion) : [];
+                      
+                      if (points.length > 0) {
+                        return (
+                          <select 
+                            className={`${inputClass} !text-emerald-700 dark:!text-emerald-400 !border-emerald-200 dark:!border-emerald-900/60 !bg-emerald-50/50 dark:!bg-emerald-900/10 text-xs md:text-sm overflow-hidden text-ellipsis`}
+                            style={{ maxWidth: '100%' }}
+                            value={points.some(p => (p.decision || p.discussion) === taskForm.title) ? taskForm.title : ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val) {
+                                const pt = points.find(p => (p.decision || p.discussion) === val);
+                                if (pt) {
+                                  setTaskForm({
+                                    ...taskForm, 
+                                    title: pt.decision || pt.discussion || '',
+                                    description: pt.discussion ? `Terkait masalah: ${pt.discussion}` : ''
+                                  });
+                                }
+                              }
+                            }}
+                          >
+                            <option value="" className="text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900">-- Pilih Keputusan --</option>
+                            {points.map((pt, idx) => {
+                              const val = pt.decision || pt.discussion || '';
+                              const label = `Poin ${idx + 1}: ${val}`;
+                              return (
+                                <option key={idx} value={val} className="text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900">
+                                  {label.length > 35 ? label.substring(0, 35) + '...' : label}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        );
+                      }
+                      return null;
+                    })()}
+                    <input type="text" required value={taskForm.title} onChange={(e) => setTaskForm({...taskForm, title: e.target.value})} placeholder="Ketik atau pilih dari opsi di atas..." className={inputClass} />
+                  </div>
                 </div>
                 <div>
                   <label className={labelClass}>Deskripsi</label>

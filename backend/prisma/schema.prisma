@@ -45,6 +45,7 @@ model Note {
   date            String?
   time            String?
   priority        String   @default("Medium")
+  visibility      String   @default("Private")
   status          String   @default("Published")
   is_favorite     Boolean  @default(false)
   is_archived     Boolean  @default(false)
@@ -53,6 +54,10 @@ model Note {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  @@index([created_by])
+  @@index([status])
+  @@index([category])
+  @@index([visibility])
   @@map("notes")
 }
 
@@ -70,6 +75,8 @@ model Meeting {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([date])
+  @@index([status])
   @@map("meetings")
 }
 
@@ -86,6 +93,9 @@ model MeetingTask {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
+  @@index([meeting_id])
+  @@index([pic])
+  @@index([status])
   @@map("meeting_tasks")
 }
 
@@ -110,6 +120,9 @@ model Task {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  @@index([pic])
+  @@index([status])
+  @@index([category])
   @@map("tasks")
 }
 

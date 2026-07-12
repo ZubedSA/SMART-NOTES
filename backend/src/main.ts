@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AllExceptionsFilter } from './all-exceptions.filter';
+import * as compression from 'compression';
 import express = require('express');
 import dns = require('dns');
 
@@ -22,6 +23,12 @@ async function bootstrap() {
   // Sajikan static folder untuk unggahan media lokal
   const path = require('path');
   server.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+  // Middleware kompresi GZIP untuk speed API yang cepat
+  server.use(compression({
+    level: 6,
+    threshold: 100 // Compress respons di atas 100 bytes
+  }));
 
   // Middleware CORS & Preflight OPTIONS tingkat Express
   server.use((req: any, res: any, next: any) => {

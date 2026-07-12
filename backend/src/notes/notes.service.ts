@@ -24,7 +24,10 @@ export class NotesService {
     } else if (userId) {
       notes = await this.prisma.note.findMany({
         where: {
-          created_by: userId,
+          OR: [
+            { created_by: userId },
+            { visibility: 'Shared' }
+          ]
         },
       });
     } else {
@@ -53,9 +56,9 @@ export class NotesService {
 
     if (!item) throw new NotFoundException('Catatan tidak ditemukan');
 
-    // Cegah akses jika bukan pemilik (berlaku untuk semua pengguna)
-    if (userId && item.created_by !== userId) {
-      throw new NotFoundException('Catatan tidak ditemukan');
+    // Cegah akses jika bukan pemilik dan bukan shared
+    if (userId && item.created_by !== userId && item.visibility !== 'Shared') {
+      throw new NotFoundException('Catatan tidak ditemukan atau bersifat Private');
     }
 
     const creator = await this.prisma.user.findUnique({
@@ -77,6 +80,7 @@ export class NotesService {
       date: data.date || new Date().toISOString().split('T')[0],
       time: data.time || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       priority: data.priority || 'Medium',
+      visibility: data.visibility || 'Private',
       status: data.status || 'Published',
       is_favorite: this.parseBool(data.is_favorite),
       is_archived: this.parseBool(data.is_archived),
@@ -100,6 +104,7 @@ export class NotesService {
     if (data.date !== undefined) payload.date = data.date;
     if (data.time !== undefined) payload.time = data.time;
     if (data.priority !== undefined) payload.priority = data.priority;
+    if (data.visibility !== undefined) payload.visibility = data.visibility;
     if (data.status !== undefined) payload.status = data.status;
     if (data.is_favorite !== undefined) payload.is_favorite = this.parseBool(data.is_favorite);
     if (data.is_archived !== undefined) payload.is_archived = this.parseBool(data.is_archived);

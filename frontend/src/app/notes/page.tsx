@@ -67,7 +67,7 @@ export default function NotesPage() {
     show: false,
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   // Convert to Agenda Modal State
@@ -135,9 +135,9 @@ export default function NotesPage() {
         try {
           setNotes(JSON.parse(cached));
           setLoading(false);
-        } catch (e) {}
+        } catch (e) { }
       }
-      
+
       // Auto open modal jika parameter url ?new=true
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('new') === 'true') {
@@ -205,18 +205,18 @@ export default function NotesPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const previousNotes = [...notes];
-    
+
     // Optimistic item creation
     const tempId = editingNote ? editingNote.id : `NOTE-TEMP-${Date.now()}`;
     const optimisticItem = { ...formData, id: tempId };
-    
+
     let updatedNotes;
     if (editingNote) {
       updatedNotes = notes.map(n => n.id === editingNote.id ? optimisticItem : n);
     } else {
       updatedNotes = [optimisticItem, ...notes];
     }
-    
+
     setNotes(updatedNotes);
     if (typeof window !== 'undefined') {
       localStorage.setItem('smart_notes_cache', JSON.stringify(updatedNotes));
@@ -257,7 +257,7 @@ export default function NotesPage() {
   const executeDelete = async (id: string) => {
     const previousNotes = [...notes];
     const updatedNotes = notes.filter(n => n.id !== id);
-    
+
     setNotes(updatedNotes);
     if (typeof window !== 'undefined') {
       localStorage.setItem('smart_notes_cache', JSON.stringify(updatedNotes));
@@ -279,7 +279,7 @@ export default function NotesPage() {
     const previousNotes = [...notes];
     const isFav = note.is_favorite === 'true' || note.is_favorite === true;
     const updatedItem = { ...note, is_favorite: isFav ? 'false' : 'true' };
-    
+
     const updatedNotes = notes.map(n => n.id === note.id ? updatedItem : n);
     setNotes(updatedNotes);
     if (typeof window !== 'undefined') {
@@ -387,11 +387,10 @@ export default function NotesPage() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 whitespace-nowrap ${
-                isSelected
+              className={`px-5 py-2 rounded-xl text-xs font-bold transition-all duration-200 whitespace-nowrap ${isSelected
                   ? 'bg-white dark:bg-slate-950 text-primary dark:text-accent shadow-sm border border-slate-250/20 dark:border-slate-800/40'
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
-              }`}
+                }`}
             >
               {cat === 'Semua' ? `Daftar Catatan (${count})` : `${cat} (${count})`}
             </button>
@@ -478,7 +477,7 @@ export default function NotesPage() {
                 className="premium-card p-0 relative overflow-hidden"
               >
                 <div className="absolute top-0 left-0 bottom-0 w-1 bg-gradient-to-b from-primary to-accent" />
-                
+
                 {/* Header Catatan */}
                 <div className="p-5 pl-6 pb-4">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
@@ -497,19 +496,22 @@ export default function NotesPage() {
                           </span>
                         )}
                         <span className="flex items-center gap-1.5"><Tag className="w-4 h-4" /> Prioritas: {note.priority || 'Medium'}</span>
+                        <span className={`flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-lg border ${note.visibility === 'Shared' ? 'bg-sky-500/10 text-sky-650 dark:bg-sky-500/20 dark:text-sky-400 border-sky-200/50 dark:border-sky-500/20' : 'bg-slate-500/10 text-slate-600 dark:bg-slate-500/20 dark:text-slate-400 border-slate-200/50 dark:border-slate-500/20'}`}>
+                          {note.visibility === 'Shared' ? <Share2 className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                          {note.visibility || 'Private'}
+                        </span>
                         {note.location && <span className="flex items-center gap-1.5 text-slate-400"><MapPin className="w-4 h-4" /> {note.location}</span>}
                       </div>
                     </div>
- 
+
                     {isWritable && (
                       <div className="flex items-center gap-1.5 pt-1 md:pt-0">
                         <button
                           onClick={() => toggleFavorite(note)}
-                          className={`p-2 rounded-xl border transition-all active:scale-[0.97] ${
-                            isFav
+                          className={`p-2 rounded-xl border transition-all active:scale-[0.97] ${isFav
                               ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-500 border-amber-200/50 dark:border-amber-900/30'
                               : 'border-slate-200/60 dark:border-slate-800/60 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900/30 hover:text-amber-500'
-                          }`}
+                            }`}
                           title="Favorit"
                         >
                           <Star className={`w-4 h-4 ${isFav ? 'fill-current' : ''}`} />
@@ -546,7 +548,7 @@ export default function NotesPage() {
                     )}
                   </div>
                 </div>
- 
+
                 {/* Konten Catatan */}
                 <div className="border-t border-slate-100 dark:border-slate-850 p-5 pl-6 bg-slate-50/20 dark:bg-slate-900/10">
                   <div className="p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-250/20 dark:border-slate-800/40 text-xs md:text-sm text-slate-700 dark:text-slate-350 leading-relaxed font-semibold">
@@ -573,7 +575,7 @@ export default function NotesPage() {
                 <X className="w-5 h-5 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200" />
               </button>
             </div>
- 
+
             {/* Form */}
             <form onSubmit={handleSave} className="flex flex-col flex-1 overflow-hidden">
               {/* Scrollable Body */}
@@ -603,7 +605,7 @@ export default function NotesPage() {
                     </select>
                   </div>
                 </div>
- 
+
                 <div>
                   <label className={labelClass}>Isi Catatan</label>
                   <textarea
@@ -615,23 +617,14 @@ export default function NotesPage() {
                     className="w-full p-4 rounded-2xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs text-slate-800 dark:text-slate-100 outline-none leading-relaxed focus:border-accent focus:ring-2 focus:ring-accent/10 transition-all duration-200 resize-none font-semibold placeholder:text-slate-400 dark:placeholder:text-slate-650"
                   />
                 </div>
- 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className={labelClass}>Tanggal</label>
                     <input
                       type="date"
                       value={formData.date}
                       onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Jam</label>
-                    <input
-                      type="time"
-                      value={formData.time}
-                      onChange={(e) => setFormData({ ...formData, time: e.target.value })}
                       className={inputClass}
                     />
                   </div>
@@ -660,14 +653,14 @@ export default function NotesPage() {
                     </select>
                   </div>
                 </div>
- 
+
                 <div>
                   <label className={labelClass}>Lokasi / Keterangan Tempat</label>
                   <input
                     type="text"
                     value={formData.location}
                     onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Contoh: Ruang Rapat Lt 3 atau Google Meet"
+                    placeholder="Opsional"
                     className={inputClass}
                   />
                 </div>
@@ -690,7 +683,7 @@ export default function NotesPage() {
                   )}
                 </div>
               </div>
- 
+
               {/* Footer - Fixed */}
               <div className="flex justify-end gap-2.5 p-6 border-t border-slate-100 dark:border-slate-800/40 bg-slate-50/20 dark:bg-slate-900/10 shrink-0">
                 <button

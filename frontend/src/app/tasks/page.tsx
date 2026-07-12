@@ -60,7 +60,7 @@ function TasksContent() {
     show: false,
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const searchParams = useSearchParams();
@@ -198,7 +198,7 @@ function TasksContent() {
     }
 
     setTasks(updatedTasks);
-    
+
     // Save only general tasks to local cache
     const generalTasksOnly = updatedTasks.filter(t => t.type === 'general');
     if (typeof window !== 'undefined') {
@@ -214,7 +214,7 @@ function TasksContent() {
         const serverItem = res.data?.data || { ...formData, id: `TSK-${Date.now()}` };
         const finalTasks = updatedTasks.map(t => t.id === tempId ? { ...serverItem, type: 'general' } : t);
         setTasks(finalTasks);
-        
+
         const finalGeneralTasks = finalTasks.filter(t => t.type === 'general');
         if (typeof window !== 'undefined') {
           localStorage.setItem('smart_kanban_tasks_cache', JSON.stringify(finalGeneralTasks));
@@ -339,17 +339,15 @@ function TasksContent() {
           <div className="bg-slate-105 dark:bg-slate-900/60 p-1 rounded-2xl flex items-center gap-1.5 border border-slate-200/40 dark:border-slate-800/40">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                viewMode === 'kanban' ? 'bg-white dark:bg-slate-950 shadow-sm text-primary dark:text-accent border border-slate-250/20 dark:border-slate-800/35' : 'text-slate-500 dark:text-slate-450'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-slate-950 shadow-sm text-primary dark:text-accent border border-slate-250/20 dark:border-slate-800/35' : 'text-slate-500 dark:text-slate-450'
+                }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" /> Kanban
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
-                viewMode === 'list' ? 'bg-white dark:bg-slate-950 shadow-sm text-primary dark:text-accent border border-slate-250/20 dark:border-slate-800/35' : 'text-slate-500 dark:text-slate-450'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-950 shadow-sm text-primary dark:text-accent border border-slate-250/20 dark:border-slate-800/35' : 'text-slate-500 dark:text-slate-450'
+                }`}
             >
               <ListIcon className="w-3.5 h-3.5" /> List
             </button>
@@ -422,9 +420,8 @@ function TasksContent() {
               <div key={status} className="min-w-[300px] w-[300px] shrink-0 premium-card p-4 flex flex-col bg-slate-50/40 dark:bg-slate-900/10">
                 <div className="flex items-center justify-between font-extrabold text-xs text-slate-900 dark:text-white mb-4 pb-2.5 border-b border-slate-100 dark:border-slate-800/60">
                   <span className="flex items-center gap-2">
-                    <span className={`w-2.5 h-2.5 rounded-full ${
-                      status === 'Selesai' ? 'bg-emerald-500' : status === 'Proses' ? 'bg-blue-500' : status === 'Review' ? 'bg-indigo-500' : status === 'Menunggu' ? 'bg-purple-500' : 'bg-slate-400'
-                    }`} />
+                    <span className={`w-2.5 h-2.5 rounded-full ${status === 'Selesai' ? 'bg-emerald-500' : status === 'Proses' ? 'bg-blue-500' : status === 'Review' ? 'bg-indigo-500' : status === 'Menunggu' ? 'bg-purple-500' : 'bg-slate-400'
+                      }`} />
                     {status}
                   </span>
                   <span className="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200/30 dark:border-slate-800/40 text-[10px] text-slate-500 dark:text-slate-400 font-bold">{cols.length}</span>
@@ -618,7 +615,7 @@ function TasksContent() {
                     required
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="Contoh: Implementasi PWA Offline Cache"
+                    placeholder="Contoh: Implementasi Pembelajaran"
                     className={inputClass}
                   />
                 </div>
