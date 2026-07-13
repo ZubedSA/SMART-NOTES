@@ -1694,28 +1694,26 @@ export default function MeetingsPage() {
                           <select 
                             className={`${inputClass} !text-emerald-700 dark:!text-emerald-400 !border-emerald-200 dark:!border-emerald-900/60 !bg-emerald-50/50 dark:!bg-emerald-900/10 text-xs md:text-sm overflow-hidden text-ellipsis`}
                             style={{ maxWidth: '100%' }}
-                            value={points.some(p => (p.decision || p.discussion) === taskForm.title) ? taskForm.title : ''}
+                            value={points.findIndex(p => (p.decision || p.discussion) === taskForm.title).toString()}
                             onChange={(e) => {
-                              const val = e.target.value;
-                              if (val) {
-                                const pt = points.find(p => (p.decision || p.discussion) === val);
-                                if (pt) {
-                                  setTaskForm({
-                                    ...taskForm, 
-                                    title: pt.decision || pt.discussion || '',
-                                    description: pt.discussion ? `Terkait masalah: ${pt.discussion}` : ''
-                                  });
-                                }
+                              const idx = parseInt(e.target.value, 10);
+                              if (!isNaN(idx) && idx >= 0 && idx < points.length) {
+                                const pt = points[idx];
+                                setTaskForm({
+                                  ...taskForm, 
+                                  title: pt.decision || pt.discussion || '',
+                                  description: pt.discussion ? `Terkait masalah: ${pt.discussion}` : ''
+                                });
                               }
                             }}
                           >
-                            <option value="" className="text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900">-- Pilih Keputusan --</option>
+                            <option value="-1" className="text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900">-- Pilih Keputusan --</option>
                             {points.map((pt, idx) => {
                               const val = pt.decision || pt.discussion || '';
                               const label = `Poin ${idx + 1}: ${val}`;
                               return (
-                                <option key={idx} value={val} className="text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900">
-                                  {label.length > 35 ? label.substring(0, 35) + '...' : label}
+                                <option key={idx} value={idx.toString()} className="text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900">
+                                  {label.length > 50 ? label.substring(0, 50) + '...' : label}
                                 </option>
                               );
                             })}
