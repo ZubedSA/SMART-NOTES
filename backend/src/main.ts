@@ -3,7 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AllExceptionsFilter } from './all-exceptions.filter';
-import * as compression from 'compression';
+import compression = require('compression');
 import express = require('express');
 import dns = require('dns');
 
